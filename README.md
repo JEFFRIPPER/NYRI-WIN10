@@ -6,7 +6,7 @@
 
 ## Статус
 
-**v0.2 — рабочий прототип с нативными Windows events.**
+**v0.3 — рабочий прототип с нативными Windows events и media controls.**
 
 Уже работает:
 
@@ -17,10 +17,15 @@
 - event-driven отслеживание доступности сети;
 - event-driven отслеживание Windows Clipboard;
 - Windows Global Media Session: текущий трек из Spotify/браузеров/плееров;
+- нативные media controls: previous / play-pause / next;
 - event-driven отслеживание VPN-интерфейсов;
 - приоритеты активностей по модели оригинального Nyri;
+- защита от запуска нескольких экземпляров;
+- сохранение позиции острова после Shift + drag;
+- прокручиваемый список активностей;
 - история активностей в раскрытом режиме;
 - перенос острова мышью через `Shift + drag`;
+- `Ctrl + R` возвращает остров в центр сверху;
 - `Esc` сворачивает раскрытый остров;
 - `Ctrl + Q` закрывает NYRI.
 
@@ -66,6 +71,8 @@ src/Nyri.Win10/
 - [x] Windows Global Media Session
 - [ ] microphone / camera privacy activity
 - [x] VPN state
+- [x] single-instance guard
+- [x] persistent island position
 - [ ] timers / stopwatch
 - [ ] file-copy progress
 - [ ] Bluetooth / headset battery
@@ -82,4 +89,4 @@ NYRI-WIN10 вдохновлён проектом [yzewe/Nyri](https://github.com
 
 ## Важно
 
-v0.2 — фундамент проекта с рабочими Windows events. API провайдеров и визуальные параметры ещё будут меняться.
+v0.3 — фундамент проекта с рабочими Windows events, media controls и сохранением состояния. API провайдеров и визуальные параметры ещё будут меняться.

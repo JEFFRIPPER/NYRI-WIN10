@@ -140,6 +140,36 @@ public sealed class MediaSessionService : IDisposable
         _session = null;
     }
 
+    public async Task PreviousAsync()
+    {
+        try
+        {
+            if (_session is not null)
+                await _session.TrySkipPreviousAsync();
+        }
+        catch { }
+    }
+
+    public async Task TogglePlayPauseAsync()
+    {
+        try
+        {
+            if (_session is not null)
+                await _session.TryTogglePlayPauseAsync();
+        }
+        catch { }
+    }
+
+    public async Task NextAsync()
+    {
+        try
+        {
+            if (_session is not null)
+                await _session.TrySkipNextAsync();
+        }
+        catch { }
+    }
+
     public void Dispose()
     {
         _disposed = true;

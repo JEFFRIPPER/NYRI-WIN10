@@ -86,16 +86,19 @@
                         <RowDefinition Height="1"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <Border Background="#33FFFFFF"
                             Height="1"
                             HorizontalAlignment="Stretch"/>
 
-                    <ItemsControl x:Name="ActivityList"
-                                  Grid.Row="1"
-                                  Margin="0,8,0,4">
-                        <ItemsControl.ItemTemplate>
+                    <ScrollViewer Grid.Row="1"
+                                  Margin="0,8,0,4"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl x:Name="ActivityList">
+                            <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Padding="8,5"
                                         Margin="0,2"
@@ -121,11 +124,32 @@
                                     </Grid>
                                 </Border>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
 
-                    <TextBlock Grid.Row="2"
-                               Text="SHIFT + drag  •  ESC свернуть  •  CTRL+Q выход"
+                    <StackPanel x:Name="MediaControls"
+                                Grid.Row="2"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Margin="0,4,0,8"
+                                Visibility="Collapsed">
+                        <Button Style="{StaticResource MediaButtonStyle}"
+                                Content="⏮"
+                                ToolTip="Предыдущий трек"
+                                Click="MediaPrevious_Click"/>
+                        <Button Style="{StaticResource MediaButtonStyle}"
+                                Content="⏯"
+                                ToolTip="Play / Pause"
+                                Click="MediaPlayPause_Click"/>
+                        <Button Style="{StaticResource MediaButtonStyle}"
+                                Content="⏭"
+                                ToolTip="Следующий трек"
+                                Click="MediaNext_Click"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="3"
+                               Text="SHIFT + drag  •  CTRL+R центр  •  ESC свернуть  •  CTRL+Q выход"
                                Foreground="{StaticResource MutedBrush}"
                                FontSize="9"
                                HorizontalAlignment="Center"/>

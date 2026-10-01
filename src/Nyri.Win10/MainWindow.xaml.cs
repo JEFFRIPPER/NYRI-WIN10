@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Nyri.Win10.Models;
@@ -13,9 +14,10 @@ public partial class MainWindow : Window
     private const double CompactWidth = 260;
     private const double CompactHeight = 70;
     private const double ExpandedWidth = 430;
-    private const double ExpandedHeight = 250;
+    private const double ExpandedHeight = 300;
 
     private readonly ActivityHub _hub = new();
+    private readonly SettingsService _settings = new();
     private readonly DispatcherTimer _clockTimer;
     private SystemStatusService? _systemStatus;
     private MediaSessionService? _mediaSession;
@@ -60,7 +62,7 @@ public partial class MainWindow : Window
         _clockTimer.Start();
         UpdateClock();
         UpdateHeader();
-        CenterAtTop();
+        RestorePosition();
     }
     private void UpdateClock()
     {
@@ -71,6 +73,10 @@ public partial class MainWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
+            MediaControls.Visibility = _hub.Activities.Any(x => x.Id == "media")
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+
             var primary = _hub.Primary;
             if (primary is null)
             {
@@ -113,6 +119,10 @@ public partial class MainWindow : Window
 
     private void Island_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (e.OriginalSource is DependencyObject source &&
+            FindParent<System.Windows.Controls.Button>(source) is not null)
+            return;
+
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {
             _manualPosition = true;
@@ -122,6 +132,38 @@ public partial class MainWindow : Window
 
         ToggleExpanded();
     }
+
+    private static T? FindParent<T>(DependencyObject? current)
+        where T : DependencyObject
+    {
+        while (current is not null)
+        {
+            if (current is T match)
+                return match;
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
+    }
+
+    private async void MediaPrevious_Click(object sender, RoutedEventArgs e)
+    {
+        if (_mediaSession is not null)
+            await _mediaSession.PreviousAsync();
+    }
+
+    private async void MediaPlayPause_Click(object sender, RoutedEventArgs e)
+    {
+        if (_mediaSession is not null)
+            await _mediaSession.TogglePlayPauseAsync();
+    }
+
+    private async void MediaNext_Click(object sender, RoutedEventArgs e)
+    {
+        if (_mediaSession is not null)
+            await _mediaSession.NextAsync();
+    }
+
     private void ToggleExpanded()
     {
         _expanded = !_expanded;
@@ -166,8 +208,45 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (e.Key == Key.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+        {
+            _manualPosition = false;
+            _settings.Save(new AppSettings());
+            CenterAtTop();
+            return;
+        }
+
         if (e.Key == Key.Escape && _expanded)
             ToggleExpanded();
+    }
+
+    private void RestorePosition()
+    {
+        var saved = _settings.Load();
+        if (saved.Left is double left &&
+            saved.Top is double top &&
+            IsOnVirtualScreen(left, top))
+        {
+            Left = left;
+            Top = top;
+            _manualPosition = true;
+            return;
+        }
+
+        CenterAtTop();
+    }
+
+    private static bool IsOnVirtualScreen(double left, double top)
+    {
+        var virtualLeft = SystemParameters.VirtualScreenLeft;
+        var virtualTop = SystemParameters.VirtualScreenTop;
+        var virtualRight = virtualLeft + SystemParameters.VirtualScreenWidth;
+        var virtualBottom = virtualTop + SystemParameters.VirtualScreenHeight;
+
+        return left + 100 > virtualLeft &&
+               left < virtualRight - 40 &&
+               top + 40 > virtualTop &&
+               top < virtualBottom - 30;
     }
 
     private void CenterAtTop()
@@ -186,6 +265,9 @@ public partial class MainWindow : Window
     }
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
+        if (_manualPosition)
+            _settings.Save(new AppSettings(Left, Top));
+
         _clockTimer.Stop();
         _clipboardCts?.Cancel();
         _clipboardCts?.Dispose();
