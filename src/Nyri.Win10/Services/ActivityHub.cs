@@ -1,44 +1,43 @@
 using System.Collections.ObjectModel;
+using System.Windows.Threading;
 using Nyri.Win10.Models;
 
 namespace Nyri.Win10.Services;
 
 public sealed class ActivityHub
 {
+    private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     public ObservableCollection<IslandActivity> Activities { get; } = new();
-
     public event EventHandler? Changed;
 
     public void Upsert(IslandActivity activity)
     {
+        if (!_dispatcher.CheckAccess())
+        {
+            _dispatcher.BeginInvoke(() => Upsert(activity));
+            return;
+        }
         var existing = Activities.FirstOrDefault(x => x.Id == activity.Id);
-        if (existing is not null)
-        {
-            var index = Activities.IndexOf(existing);
-            Activities[index] = activity;
-        }
-        else
-        {
-            Activities.Insert(0, activity);
-        }
-
+        // Providers may reconcile periodically. Unchanged state must not reorder priorities.
+        if (existing is not null && existing with { UpdatedAt = activity.UpdatedAt } == activity) return;
+        if (existing is not null) Activities[Activities.IndexOf(existing)] = activity;
+        else Activities.Insert(0, activity);
         Trim();
         Changed?.Invoke(this, EventArgs.Empty);
     }
-    public IslandActivity? Primary =>
-        Activities
-            .Where(x => x.IsActive && !x.Ambient)
-            .OrderByDescending(x => x.Priority)
-            .ThenByDescending(x => x.UpdatedAt)
-            .FirstOrDefault()
-        ?? Activities
-            .Where(x => x.IsActive)
-            .OrderByDescending(x => x.Priority)
-            .ThenByDescending(x => x.UpdatedAt)
-            .FirstOrDefault();
+
+    public IslandActivity? Primary => Activities.Where(x => x.IsActive)
+        .OrderBy(x => x.Ambient)
+        .ThenByDescending(x => x.Priority)
+        .ThenByDescending(x => x.UpdatedAt).FirstOrDefault();
 
     public void Remove(string id)
     {
+        if (!_dispatcher.CheckAccess())
+        {
+            _dispatcher.BeginInvoke(() => Remove(id));
+            return;
+        }
         var existing = Activities.FirstOrDefault(x => x.Id == id);
         if (existing is null) return;
         Activities.Remove(existing);
@@ -47,7 +46,8 @@ public sealed class ActivityHub
 
     private void Trim()
     {
-        while (Activities.Count > 8)
-            Activities.RemoveAt(Activities.Count - 1);
+        // Never evict active providers: otherwise a clipboard event can hide capture usage.
+        foreach (var item in Activities.Where(x => !x.IsActive).Skip(8).ToArray())
+            Activities.Remove(item);
     }
 }

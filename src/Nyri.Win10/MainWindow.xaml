@@ -70,11 +70,15 @@
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="MicrophoneIndicator" Text="&#xE720;" FontFamily="Segoe MDL2 Assets" Foreground="#FF9EE6B0" Margin="0,0,5,0" Visibility="Collapsed" ToolTip="Windows сообщает об использовании микрофона"/>
+                        <TextBlock x:Name="CameraIndicator" Text="&#xE714;" FontFamily="Segoe MDL2 Assets" Foreground="#FF9EE6B0" Margin="0,0,5,0" Visibility="Collapsed" ToolTip="Windows сообщает об использовании камеры"/>
                     <TextBlock x:Name="ClockText"
                                Grid.Column="2"
                                FontSize="12"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center"/>
+                    </StackPanel>
                 </Grid>
 
                 <Grid x:Name="ExpandedPanel"
@@ -94,7 +98,7 @@
                             Height="1"
                             HorizontalAlignment="Stretch"/>
 
-                    <ScrollViewer Grid.Row="1"
+                    <ScrollViewer Grid.Row="1" MaxHeight="100"
                                   Margin="0,8,0,4"
                                   VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled">
@@ -110,7 +114,7 @@
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{Binding Glyph}"
-                                                   FontSize="14"
+                                                   FontSize="14" FontFamily="Segoe UI, Segoe MDL2 Assets"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Center"/>
                                         <StackPanel Grid.Column="1">

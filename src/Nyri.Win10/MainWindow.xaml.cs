@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly SettingsService _settings = new();
     private readonly TimerService _timerService;
     private readonly DispatcherTimer _clockTimer;
+    private PrivacyService? _privacy;
     private SystemStatusService? _systemStatus;
     private MediaSessionService? _mediaSession;
     private ClipboardListener? _clipboardListener;
@@ -57,6 +58,7 @@ public partial class MainWindow : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        _privacy = new PrivacyService(_hub);
         _systemStatus = new SystemStatusService(_hub);
         _mediaSession = new MediaSessionService(_hub);
         await _mediaSession.StartAsync();
@@ -79,6 +81,8 @@ public partial class MainWindow : Window
                 ? Visibility.Visible
                 : Visibility.Collapsed;
 
+            MicrophoneIndicator.Visibility = _hub.Activities.Any(x => x.Id == "privacy:microphone") ? Visibility.Visible : Visibility.Collapsed;
+            CameraIndicator.Visibility = _hub.Activities.Any(x => x.Id == "privacy:webcam") ? Visibility.Visible : Visibility.Collapsed;
             var primary = _hub.Primary;
             if (primary is null)
             {
@@ -88,6 +92,7 @@ public partial class MainWindow : Window
                 return;
             }
 
+            StatusGlyph.FontFamily = new FontFamily(primary.Kind is IslandActivityKind.Microphone or IslandActivityKind.Camera ? "Segoe MDL2 Assets" : "Segoe UI");
             StatusGlyph.Text = primary.Glyph;
             TitleText.Text = primary.Title;
             DetailText.Text = primary.Detail;
@@ -178,7 +183,7 @@ public partial class MainWindow : Window
     private void ToggleExpanded()
     {
         _expanded = !_expanded;
-        var duration = TimeSpan.FromMilliseconds(240);
+        var duration = TimeSpan.FromMilliseconds(SystemParameters.ClientAreaAnimation ? 240 : 0);
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
 
         if (_expanded)
@@ -195,7 +200,7 @@ public partial class MainWindow : Window
             {
                 EasingFunction = ease
             };
-            fade.Completed += (_, _) => ExpandedPanel.Visibility = Visibility.Collapsed;
+            fade.Completed += (_, _) => { if (!_expanded) ExpandedPanel.Visibility = Visibility.Collapsed; };
             ExpandedPanel.BeginAnimation(OpacityProperty, fade);
             AnimateWindow(CompactWidth, CompactHeight, duration, ease);
         }
@@ -285,6 +290,7 @@ public partial class MainWindow : Window
         _clipboardListener?.Dispose();
         _mediaSession?.Dispose();
         _systemStatus?.Dispose();
+        _privacy?.Dispose();
         _timerService.Dispose();
     }
 }

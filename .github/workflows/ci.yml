@@ -21,3 +21,5 @@ jobs:
 
       - name: Build
         run: dotnet build NYRI-WIN10.sln -c Release
+      - name: Activity and privacy smoke tests
+        run: dotnet run --project tests/Nyri.SmokeTests -c Release
