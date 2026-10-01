@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish self-contained EXE
+        shell: pwsh
+        run: |
+          dotnet publish src\Nyri.Win10\Nyri.Win10.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:EnableCompressionInSingleFile=true `
+            -p:DebugType=None `            -p:DebugSymbols=false `
+            -o dist\win-x64
+
+      - name: SHA-256
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash .\dist\win-x64\NYRI-WIN10.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  NYRI-WIN10.exe" | Set-Content .\dist\win-x64\SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$env:GITHUB_REF_NAME" `
+            ".\dist\win-x64\NYRI-WIN10.exe#NYRI-WIN10.exe" `
+            ".\dist\win-x64\SHA256SUMS.txt#SHA256SUMS.txt" `
+            --repo "$env:GITHUB_REPOSITORY" `
+            --title "NYRI-WIN10 $env:GITHUB_REF_NAME" `
+            --generate-notes
