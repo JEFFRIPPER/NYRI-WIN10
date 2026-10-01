@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>NYRI-WIN10</AssemblyName>
+    <RootNamespace>Nyri.Win10</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>JEFFRIPPER</Authors>
+    <Description>Nyri-inspired live island shell for Windows 10 and 11.</Description>
+  </PropertyGroup>
+</Project>

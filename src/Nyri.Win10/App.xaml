@@ -1,0 +1,16 @@
+<Application x:Class="Nyri.Win10.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#E60F1115"/>
+        <SolidColorBrush x:Key="SurfaceVariantBrush" Color="#FF23262C"/>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#FFD7B8FF"/>
+        <SolidColorBrush x:Key="OnSurfaceBrush" Color="#FFF2F0F4"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="#FFB8B5BE"/>
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe UI Variable Text, Segoe UI"/>
+            <Setter Property="Foreground" Value="{StaticResource OnSurfaceBrush}"/>
+        </Style>
+    </Application.Resources>
+</Application>
