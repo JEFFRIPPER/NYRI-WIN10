@@ -26,7 +26,16 @@ public sealed class ActivityHub
         Changed?.Invoke(this, EventArgs.Empty);
     }
     public IslandActivity? Primary =>
-        Activities.OrderByDescending(x => x.UpdatedAt).FirstOrDefault(x => x.IsActive);
+        Activities
+            .Where(x => x.IsActive && !x.Ambient)
+            .OrderByDescending(x => x.Priority)
+            .ThenByDescending(x => x.UpdatedAt)
+            .FirstOrDefault()
+        ?? Activities
+            .Where(x => x.IsActive)
+            .OrderByDescending(x => x.Priority)
+            .ThenByDescending(x => x.UpdatedAt)
+            .FirstOrDefault();
 
     public void Remove(string id)
     {

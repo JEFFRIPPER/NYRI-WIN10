@@ -20,5 +20,7 @@ public sealed record IslandActivity(
     string Detail,
     string Glyph,
     DateTimeOffset UpdatedAt,
-    bool IsActive = true
+    bool IsActive = true,
+    int Priority = 0,
+    bool Ambient = false
 );

@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly ActivityHub _hub = new();
     private readonly DispatcherTimer _clockTimer;
     private SystemStatusService? _systemStatus;
+    private MediaSessionService? _mediaSession;
     private ClipboardListener? _clipboardListener;
     private CancellationTokenSource? _clipboardCts;
     private bool _expanded;
@@ -40,7 +41,9 @@ public partial class MainWindow : Window
             "NYRI готов",
             "Windows live island",
             "◆",
-            DateTimeOffset.Now));
+            DateTimeOffset.Now,
+            true,
+            1));
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e)
@@ -48,9 +51,12 @@ public partial class MainWindow : Window
         _clipboardListener = new ClipboardListener(this, OnClipboard);
     }
 
-    private void Window_Loaded(object sender, RoutedEventArgs e)
+    private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
         _systemStatus = new SystemStatusService(_hub);
+        _mediaSession = new MediaSessionService(_hub);
+        await _mediaSession.StartAsync();
+
         _clockTimer.Start();
         UpdateClock();
         UpdateHeader();
@@ -91,7 +97,9 @@ public partial class MainWindow : Window
             "Скопировано",
             text,
             "▣",
-            DateTimeOffset.Now));
+            DateTimeOffset.Now,
+            true,
+            65));
 
         try
         {
@@ -182,6 +190,7 @@ public partial class MainWindow : Window
         _clipboardCts?.Cancel();
         _clipboardCts?.Dispose();
         _clipboardListener?.Dispose();
+        _mediaSession?.Dispose();
         _systemStatus?.Dispose();
     }
 }
