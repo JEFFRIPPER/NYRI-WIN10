@@ -7,4 +7,5 @@ dist/
 *.pdb
 *.log
 .DS_Store
-Thumbs.db.tools/
+Thumbs.db
+.tools/
