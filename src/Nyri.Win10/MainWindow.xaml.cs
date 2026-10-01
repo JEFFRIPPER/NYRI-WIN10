@@ -58,15 +58,32 @@ public partial class MainWindow : Window
 
     private async void Window_Loaded(object sender, RoutedEventArgs e)
     {
+        // Place and paint the island before waiting for optional Windows providers.
+        RestorePosition();
+        _clockTimer.Start();
+        UpdateClock();
+        UpdateHeader();
+        AppDiagnostics.Write($"Window loaded: visible={IsVisible}, left={Left}, top={Top}, size={ActualWidth}x{ActualHeight}");
+        (Application.Current as App)?.WindowReady(this);
         _privacy = new PrivacyService(_hub);
         _systemStatus = new SystemStatusService(_hub);
         _mediaSession = new MediaSessionService(_hub);
         await _mediaSession.StartAsync();
 
-        _clockTimer.Start();
-        UpdateClock();
-        UpdateHeader();
-        RestorePosition();
+        AppDiagnostics.Write("Media provider initialized");
+    }
+    public void Reveal()
+    {
+        if (Dispatcher.HasShutdownStarted) return;
+        Show();
+        WindowState = WindowState.Normal;
+        // A second launch is an explicit recovery request; bring the island into view.
+        _manualPosition = false;
+        _settings.Save(new AppSettings());
+        CenterAtTop();
+        Activate();
+        Focus();
+        AppDiagnostics.Write($"Window revealed: visible={IsVisible}, left={Left}, top={Top}");
     }
     private void UpdateClock()
     {

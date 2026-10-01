@@ -9,6 +9,26 @@ internal static class Program
     [STAThread]
     private static void Main()
     {
+        using (var primary = new SingleInstanceService(@"Local\NyriSmokeTest." + Guid.NewGuid()))
+        {
+            // The service identity is tested below with another independent owner.
+            Check(primary.IsPrimary, "First launch owns the single-instance guard");
+        }
+        var identity = @"Local\NyriSmokeTest." + Guid.NewGuid();
+        using (var primary = new SingleInstanceService(identity))
+        using (var activated = new ManualResetEventSlim())
+        {
+            primary.StartListening(() => activated.Set());
+            var signalled = Task.Run(() =>
+            {
+                using var secondary = new SingleInstanceService(identity);
+                Check(!secondary.IsPrimary, "Second launch does not acquire ownership");
+                return secondary.SignalPrimary();
+            }).GetAwaiter().GetResult();
+            Check(signalled && activated.Wait(TimeSpan.FromSeconds(5)), "Second launch activates the first instance");
+        }
+        using (var restarted = new SingleInstanceService(identity))
+            Check(restarted.IsPrimary, "Guard is released on shutdown");
         var hub = new ActivityHub();
         var privacy = new IslandActivity("privacy:microphone", IslandActivityKind.Microphone,
             "Mic", "test", "M", DateTimeOffset.Now, Priority: 100);

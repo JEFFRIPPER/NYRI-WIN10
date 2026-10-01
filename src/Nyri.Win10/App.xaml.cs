@@ -1,33 +1,43 @@
-using System.Threading;
 using System.Windows;
+using Nyri.Win10.Services;
 
 namespace Nyri.Win10;
 
 public partial class App : Application
 {
-    private Mutex? _singleInstanceMutex;
-    private bool _ownsMutex;
+    private SingleInstanceService? _singleInstance;
+    private bool _revealRequested;
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        const string mutexName = @"Local\JEFFRIPPER.NYRI-WIN10";
-        _singleInstanceMutex = new Mutex(true, mutexName, out _ownsMutex);
-
-        if (!_ownsMutex)
+        AppDiagnostics.Write("Startup requested");
+        _singleInstance = new SingleInstanceService();
+        if (!_singleInstance.IsPrimary)
         {
+            AppDiagnostics.Write("Existing instance signalled: " + _singleInstance.SignalPrimary());
             Shutdown();
             return;
         }
 
+        _singleInstance.StartListening(() => Dispatcher.BeginInvoke(() =>
+        {
+            if (MainWindow is Nyri.Win10.MainWindow island) island.Reveal();
+        }));
+        DispatcherUnhandledException += (_, args) => AppDiagnostics.Write("Unhandled UI error: " + args.Exception);
         base.OnStartup(e);
+    }
+
+    internal void WindowReady(Nyri.Win10.MainWindow island)
+    {
+        if (!_revealRequested) return;
+        _revealRequested = false;
+        island.Reveal();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        if (_ownsMutex)
-            _singleInstanceMutex?.ReleaseMutex();
-
-        _singleInstanceMutex?.Dispose();
+        _singleInstance?.Dispose();
+        AppDiagnostics.Write("Exit: " + e.ApplicationExitCode);
         base.OnExit(e);
     }
 }
