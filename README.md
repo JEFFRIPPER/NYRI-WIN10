@@ -1,12 +1,14 @@
 # NYRI-WIN10
 
-Нативный Windows-порт идеи [Nyri](https://github.com/yzewe/Nyri): компактный Live Island в стиле Material 3 Expressive для Windows 10 и Windows 11.
+Нативный Windows-порт desktop-shell [Nyri](https://github.com/yzewe/Nyri) в стиле Material 3 Expressive для Windows 10 и Windows 11. Цель — единая среда рабочего стола: панель, док, поиск, шторка, виджеты, обои и настройки. Live Island — один из модулей этой среды.
 
 Проект не заменяет Explorer и не пытается запускать Linux-оболочку через WSL. Это отдельное WPF-приложение поверх рабочего стола Windows.
 
 ## Статус
 
-**v0.3 — рабочий прототип с нативными Windows events и media controls.**
+**v0.3 — фундамент порта: реализован Live Island и часть нативных Windows-провайдеров. Полноценная desktop-shell пока в разработке.**
+
+Подробный разбор оригинала, Material 3 Expressive и карта переноса: [docs/NYRI-UPSTREAM-STUDY.md](docs/NYRI-UPSTREAM-STUDY.md). Референс зафиксирован на upstream-коммите `660cf73`, поддерживающем Niri и Hyprland.
 
 Уже работает:
 
@@ -63,6 +65,19 @@ src/Nyri.Win10/
 
 ## Roadmap
 
+Приоритет после системного фундамента — полноценная оболочка по архитектуре оригинала:
+
+- [ ] общий ShellRuntime и маршрутизация панелей
+- [ ] Material 3 Expressive: semantic colors, type, shape, motion
+- [ ] настраиваемая верхняя/нижняя панель с Live Island
+- [ ] launcher с реальными приложениями и окнами
+- [ ] dock закреплённых и запущенных приложений
+- [ ] control center с рабочими действиями и страницами
+- [ ] desktop widgets, раскладка и обои
+- [ ] отдельные настройки оболочки
+- [ ] notification center, OSD и история буфера
+
+
 - [x] WPF overlay / always-on-top island
 - [x] compact / expanded states
 - [x] animated resizing
@@ -83,7 +98,7 @@ src/Nyri.Win10/
 
 ## Происхождение идеи
 
-NYRI-WIN10 вдохновлён проектом [yzewe/Nyri](https://github.com/yzewe/Nyri), который является Linux shell для niri + Quickshell. Исходный Nyri распространяется под MIT License.
+NYRI-WIN10 вдохновлён проектом [yzewe/Nyri](https://github.com/yzewe/Nyri), который является Linux desktop-shell для Niri/Hyprland + Quickshell. Исходный Nyri распространяется под MIT License.
 
 Этот репозиторий — отдельная Windows-реализация: Linux/Wayland-код Nyri здесь не запускается и напрямую не переносится.
 
