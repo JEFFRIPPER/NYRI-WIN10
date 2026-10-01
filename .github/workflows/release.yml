@@ -29,7 +29,8 @@ jobs:
             -p:PublishSingleFile=true `
             -p:IncludeNativeLibrariesForSelfExtract=true `
             -p:EnableCompressionInSingleFile=true `
-            -p:DebugType=None `            -p:DebugSymbols=false `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
             -o dist\win-x64
 
       - name: SHA-256
