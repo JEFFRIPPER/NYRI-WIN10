@@ -87,6 +87,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <Border Background="#33FFFFFF"
@@ -148,7 +149,25 @@
                                 Click="MediaNext_Click"/>
                     </StackPanel>
 
-                    <TextBlock Grid.Row="3"
+                    <StackPanel Grid.Row="3"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Margin="0,0,0,8">
+                        <Button Style="{StaticResource MediaButtonStyle}"
+                                Content="5m"
+                                ToolTip="Таймер на 5 минут"
+                                Click="StartFiveMinuteTimer_Click"/>
+                        <Button Style="{StaticResource MediaButtonStyle}"
+                                Content="⏱"
+                                ToolTip="Старт / стоп секундомера"
+                                Click="ToggleStopwatch_Click"/>
+                        <Button Style="{StaticResource MediaButtonStyle}"
+                                Content="■"
+                                ToolTip="Остановить таймер"
+                                Click="StopTimer_Click"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="4"
                                Text="SHIFT + drag  •  CTRL+R центр  •  ESC свернуть  •  CTRL+Q выход"
                                Foreground="{StaticResource MutedBrush}"
                                FontSize="9"

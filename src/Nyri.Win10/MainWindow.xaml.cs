@@ -18,6 +18,7 @@ public partial class MainWindow : Window
 
     private readonly ActivityHub _hub = new();
     private readonly SettingsService _settings = new();
+    private readonly TimerService _timerService;
     private readonly DispatcherTimer _clockTimer;
     private SystemStatusService? _systemStatus;
     private MediaSessionService? _mediaSession;
@@ -29,6 +30,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _timerService = new TimerService(_hub);
         ActivityList.ItemsSource = _hub.Activities;
         _hub.Changed += (_, _) => UpdateHeader();
         _clockTimer = new DispatcherTimer
@@ -164,6 +166,15 @@ public partial class MainWindow : Window
             await _mediaSession.NextAsync();
     }
 
+    private void StartFiveMinuteTimer_Click(object sender, RoutedEventArgs e)
+        => _timerService.StartCountdown(TimeSpan.FromMinutes(5));
+
+    private void ToggleStopwatch_Click(object sender, RoutedEventArgs e)
+        => _timerService.ToggleStopwatch();
+
+    private void StopTimer_Click(object sender, RoutedEventArgs e)
+        => _timerService.Stop();
+
     private void ToggleExpanded()
     {
         _expanded = !_expanded;
@@ -274,5 +285,6 @@ public partial class MainWindow : Window
         _clipboardListener?.Dispose();
         _mediaSession?.Dispose();
         _systemStatus?.Dispose();
+        _timerService.Dispose();
     }
 }
