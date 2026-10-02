@@ -1,0 +1,122 @@
+<Window x:Class="Nyri.Win10.Shell.DesktopWidgetWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Style="{DynamicResource ShellWindowStyle}"
+        Title="NYRI — виджеты рабочего стола" Width="220" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
+        Foreground="{DynamicResource OnSurfaceBrush}" FontFamily="{DynamicResource ShellFontFamily}"
+        ShowInTaskbar="False" ShowActivated="False" Topmost="False" UseLayoutRounding="True"
+        Loaded="Window_Loaded" SourceInitialized="Window_SourceInitialized"
+        PreviewMouseLeftButtonDown="Window_PreviewMouseLeftButtonDown" SizeChanged="Window_SizeChanged"
+        AutomationProperties.HelpText="Удерживайте Shift и перетащите виджет, чтобы изменить его положение">
+    <Window.Resources>
+        <Style x:Key="DesktopResourceBarStyle" TargetType="ProgressBar">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid>
+                            <Border x:Name="PART_Track" Background="{TemplateBinding Background}" CornerRadius="4"/>
+                            <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" CornerRadius="4" HorizontalAlignment="Left"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="4">
+        <StackPanel x:Name="LeftWidgets">
+            <Canvas x:Name="ClockCanvas" Width="212" Height="212" HorizontalAlignment="Center"
+                    ToolTip="Текущее местное время" AutomationProperties.Name="Аналоговые часы">
+                <Path x:Name="ClockFlower" Fill="{DynamicResource PrimaryContainerBrush}"/>
+                <Canvas x:Name="ClockMarks" IsHitTestVisible="False"/>
+                <Line x:Name="HourHand" X1="106" Y1="106" X2="106" Y2="68"
+                      Stroke="{DynamicResource OnPrimaryContainerBrush}" StrokeThickness="7"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                <Line x:Name="MinuteHand" X1="106" Y1="106" X2="106" Y2="46"
+                      Stroke="{DynamicResource OnPrimaryContainerBrush}" StrokeThickness="4"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                <Ellipse Width="10" Height="10" Canvas.Left="101" Canvas.Top="101"
+                         Fill="{DynamicResource PrimaryBrush}"/>
+            </Canvas>
+            <TextBlock x:Name="DigitalTimeText" FontSize="26" FontWeight="SemiBold" HorizontalAlignment="Center"
+                       Foreground="{DynamicResource OnSurfaceBrush}" Margin="0,-2,0,10"/>
+            <Button Style="{DynamicResource TonalButtonStyle}" Click="Control_Click" Padding="12,10" Margin="0,0,0,18"
+                    AutomationProperties.Name="Открыть шторку NYRI">
+                <TextBlock x:Name="DateText" FontSize="11" TextAlignment="Center"/>
+            </Button>
+            <Border Background="{DynamicResource SurfaceContainerBrush}" CornerRadius="28" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Плеер" Style="{DynamicResource LabelSmallTextStyle}"
+                               Foreground="{DynamicResource OnSurfaceVariantBrush}" Margin="0,0,0,12"/>
+                    <TextBlock x:Name="MediaTitleText" Style="{DynamicResource TitleMediumTextStyle}"
+                               TextWrapping="Wrap" MaxHeight="46" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="MediaDetailText" FontSize="12" Foreground="{DynamicResource OnSurfaceVariantBrush}"
+                               TextTrimming="CharacterEllipsis" Margin="0,6,0,12"/>
+                    <StackPanel x:Name="MediaControls" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="⏮" Style="{DynamicResource MediaButtonStyle}" Click="Previous_Click" ToolTip="Предыдущий трек"/>
+                        <Button Content="⏯" Style="{DynamicResource MediaButtonStyle}" Click="Play_Click" ToolTip="Воспроизведение / пауза"/>
+                        <Button Content="⏭" Style="{DynamicResource MediaButtonStyle}" Click="Next_Click" ToolTip="Следующий трек"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+            <Border x:Name="TimerCard" Background="{DynamicResource SecondaryContainerBrush}" CornerRadius="24"
+                    Padding="16" Margin="0,14,0,0" Visibility="Collapsed">
+                <Grid>
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="TimerTitleText" FontSize="11" Foreground="{DynamicResource OnSecondaryContainerBrush}"/>
+                        <TextBlock x:Name="TimerValueText" FontSize="24" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource OnSecondaryContainerBrush}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="×" Style="{DynamicResource ShellIconButtonStyle}"
+                            Click="StopTimer_Click" ToolTip="Остановить таймер" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+        </StackPanel>
+        <StackPanel x:Name="RightWidgets" Visibility="Collapsed">
+            <Border Background="{DynamicResource SurfaceContainerBrush}" CornerRadius="28" Padding="16">
+                <StackPanel>
+                    <TextBlock x:Name="CalendarTitleText" Style="{DynamicResource TitleMediumTextStyle}" Margin="0,0,0,16"/>
+                    <UniformGrid Columns="7" Margin="0,0,0,6">
+                        <TextBlock Text="Пн" Style="{DynamicResource LabelSmallTextStyle}" HorizontalAlignment="Center" Foreground="{DynamicResource OnSurfaceVariantBrush}"/>
+                        <TextBlock Text="Вт" Style="{DynamicResource LabelSmallTextStyle}" HorizontalAlignment="Center" Foreground="{DynamicResource OnSurfaceVariantBrush}"/>
+                        <TextBlock Text="Ср" Style="{DynamicResource LabelSmallTextStyle}" HorizontalAlignment="Center" Foreground="{DynamicResource OnSurfaceVariantBrush}"/>
+                        <TextBlock Text="Чт" Style="{DynamicResource LabelSmallTextStyle}" HorizontalAlignment="Center" Foreground="{DynamicResource OnSurfaceVariantBrush}"/>
+                        <TextBlock Text="Пт" Style="{DynamicResource LabelSmallTextStyle}" HorizontalAlignment="Center" Foreground="{DynamicResource OnSurfaceVariantBrush}"/>
+                        <TextBlock Text="Сб" Style="{DynamicResource LabelSmallTextStyle}" HorizontalAlignment="Center" Foreground="{DynamicResource OnSurfaceVariantBrush}"/>
+                        <TextBlock Text="Вс" Style="{DynamicResource LabelSmallTextStyle}" HorizontalAlignment="Center" Foreground="{DynamicResource OnSurfaceVariantBrush}"/>
+                    </UniformGrid>
+                    <UniformGrid x:Name="CalendarDays" Columns="7" Rows="6" Height="180"/>
+                </StackPanel>
+            </Border>
+            <Border Background="{DynamicResource SurfaceContainerBrush}" CornerRadius="28" Padding="18" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="Система" Style="{DynamicResource TitleMediumTextStyle}" Margin="0,0,0,16"/>
+                    <Grid>
+                        <TextBlock Text="CPU" Style="{DynamicResource LabelMediumTextStyle}"/>
+                        <TextBlock x:Name="CpuText" HorizontalAlignment="Right" Style="{DynamicResource LabelMediumTextStyle}"/>
+                    </Grid>
+                    <ProgressBar x:Name="CpuBar" Minimum="0" Maximum="100" Height="7" Margin="0,8,0,16"
+                                 Style="{StaticResource DesktopResourceBarStyle}"
+                                 Foreground="{DynamicResource PrimaryBrush}" Background="{DynamicResource SurfaceContainerHighestBrush}"/>
+                    <Grid>
+                        <TextBlock Text="RAM" Style="{DynamicResource LabelMediumTextStyle}"/>
+                        <TextBlock x:Name="MemoryText" HorizontalAlignment="Right" Style="{DynamicResource LabelMediumTextStyle}"/>
+                    </Grid>
+                    <ProgressBar x:Name="MemoryBar" Minimum="0" Maximum="100" Height="7" Margin="0,8,0,16"
+                                 Style="{StaticResource DesktopResourceBarStyle}"
+                                 Foreground="{DynamicResource SecondaryBrush}" Background="{DynamicResource SurfaceContainerHighestBrush}"/>
+                    <Border Background="{DynamicResource TertiaryContainerBrush}" CornerRadius="18" Padding="12,10">
+                        <StackPanel>
+                            <TextBlock x:Name="BatteryText" FontSize="13" Foreground="{DynamicResource OnTertiaryContainerBrush}"/>
+                            <TextBlock x:Name="PowerText" FontSize="11" Foreground="{DynamicResource OnTertiaryContainerBrush}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+            <Button Content="Настроить рабочий стол" Style="{DynamicResource TonalButtonStyle}" Click="Settings_Click"
+                    Padding="12,10" FontSize="12" Margin="0,16,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

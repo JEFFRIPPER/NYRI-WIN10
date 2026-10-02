@@ -1,6 +1,7 @@
 <Window x:Class="Nyri.Win10.Shell.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Style="{DynamicResource ShellWindowStyle}"
         Title="Настройки NYRI" Width="900" Height="650" MinWidth="680" MinHeight="520"
         Background="{DynamicResource SurfaceBrush}" Foreground="{DynamicResource OnSurfaceBrush}" WindowStartupLocation="CenterScreen">
     <Grid Margin="24">
@@ -11,6 +12,7 @@
             <TextBlock Text="Единая тема для панели, поиска, дока и шторки." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap" Margin="0,12,0,24"/>
             <Button Content="Шторка" Style="{DynamicResource TonalButtonStyle}" Click="Control_Click" Margin="0,0,0,8"/>
             <Button Content="Поиск приложений" Style="{DynamicResource ShellButtonStyle}" Click="Search_Click" Margin="0,0,0,8"/>
+            <Button Content="Обои" Style="{DynamicResource ShellButtonStyle}" Click="Wallpaper_Click" Margin="0,0,0,8"/>
             <Button Content="Выход из NYRI" Style="{DynamicResource OutlinedButtonStyle}" Click="Exit_Click" Margin="0,24,0,0"/>
         </StackPanel>
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
@@ -29,6 +31,7 @@
                     <TextBlock Text="Расположение панели" Foreground="{DynamicResource MutedBrush}" Margin="0,14,0,8"/>
                     <ComboBox x:Name="PositionBox" SelectedValuePath="Tag" SelectionChanged="Position_Changed" Padding="10"><ComboBoxItem Content="Сверху" Tag="top"/><ComboBoxItem Content="Снизу" Tag="bottom"/></ComboBox>
                     <CheckBox x:Name="DockCheck" Content="Показывать док" Foreground="{DynamicResource OnSurfaceBrush}" Margin="0,16,0,0" Checked="Dock_Changed" Unchecked="Dock_Changed"/>
+                    <CheckBox x:Name="WidgetsCheck" Content="Виджеты рабочего стола" Foreground="{DynamicResource OnSurfaceBrush}" Margin="0,16,0,0" Checked="Widgets_Changed" Unchecked="Widgets_Changed"/>
                 </StackPanel></Border>
                 <Border Style="{DynamicResource ShellCardStyle}" Padding="20"><StackPanel>
                     <TextBlock Text="Клавиши" Style="{DynamicResource TitleMediumTextStyle}"/>

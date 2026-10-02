@@ -16,6 +16,7 @@ public partial class SettingsWindow : Window
         PaletteBox.SelectedValue = saved.Palette;
         PositionBox.SelectedValue = saved.BarPosition;
         DockCheck.IsChecked = saved.DockEnabled;
+        WidgetsCheck.IsChecked = saved.DesktopWidgetsEnabled;
         _ready = true;
         Loaded += (_, _) =>
         {
@@ -43,6 +44,7 @@ public partial class SettingsWindow : Window
         _shell.Runtime.Settings.Update(saved => saved with { BarPosition = edge });
         _shell.Bar.ApplyPosition(edge);
         _shell.Dock.Refresh();
+        _shell.PositionDesktopWidgets();
     }
     private void Dock_Changed(object sender, RoutedEventArgs e)
     {
@@ -53,5 +55,12 @@ public partial class SettingsWindow : Window
     }
     private void Control_Click(object sender, RoutedEventArgs e) => _shell.Router.Open(ShellPanel.ControlCenter);
     private void Search_Click(object sender, RoutedEventArgs e) => _shell.Router.Open(ShellPanel.Launcher);
+    private void Wallpaper_Click(object sender, RoutedEventArgs e) => _shell.ShowWallpaper();
+    private void Widgets_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        _shell.Runtime.Settings.Update(saved => saved with { DesktopWidgetsEnabled = WidgetsCheck.IsChecked == true });
+        _shell.ApplyDesktopWidgets();
+    }
     private void Exit_Click(object sender, RoutedEventArgs e) => Application.Current.Shutdown();
 }

@@ -39,15 +39,24 @@ public partial class App : Application
         });
         DispatcherUnhandledException += (_, args) => AppDiagnostics.Write("Unhandled UI error: " + args.Exception);
         base.OnStartup(e);
-        Theme = new ThemeService(Resources);
-        _runtime = new ShellRuntime();
-        var saved = _runtime.Settings.Load();
-        Theme.Apply(saved.Dark, saved.Palette);
-        _shell = new ShellCoordinator(_runtime, Theme);
-        MainWindow = _shell.Bar;
-        _shell.Bar.Closed += (_, _) => { if (!_exiting && !Dispatcher.HasShutdownStarted) Shutdown(); };
-        await _shell.StartAsync();
-        if (_revealRequested) { _revealRequested = false; _shell.Reveal(); }
+        try
+        {
+            Theme = new ThemeService(Resources);
+            _runtime = new ShellRuntime();
+            var saved = _runtime.Settings.Load();
+            Theme.Apply(saved.Dark, saved.Palette);
+            _shell = new ShellCoordinator(_runtime, Theme);
+            MainWindow = _shell.Bar;
+            _shell.Bar.Closed += (_, _) => { if (!_exiting && !Dispatcher.HasShutdownStarted) Shutdown(); };
+            await _shell.StartAsync();
+            if (_revealRequested) { _revealRequested = false; _shell.Reveal(); }
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Write("Shell startup failed: " + ex);
+            MessageBox.Show("Не удалось запустить оболочку. Подробности: %LOCALAPPDATA%\\NYRI-WIN10\\startup.log", "NYRI", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

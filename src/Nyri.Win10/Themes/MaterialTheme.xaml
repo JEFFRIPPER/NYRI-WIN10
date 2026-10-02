@@ -83,8 +83,7 @@
     <CubicEase x:Key="MotionDeceleration" EasingMode="EaseOut"/>
 
     <Style TargetType="TextBlock">
-        <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}"/>
-        <!-- Inherit foreground from the window/button: filled buttons require on-primary ink. -->
+        <!-- Inherit ink and font from the window/button, including icon font glyphs. -->
         <Setter Property="FontSize" Value="{DynamicResource BodyMediumSize}"/>
         <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
     </Style>

@@ -9,6 +9,7 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        if (args.Contains("--ui-only")) { UiChecks.Run(Check, args); return; }
         using (var primary = new SingleInstanceService(@"Local\NyriSmokeTest." + Guid.NewGuid()))
         {
             // The service identity is tested below with another independent owner.

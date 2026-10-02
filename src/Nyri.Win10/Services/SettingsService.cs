@@ -10,7 +10,13 @@ public sealed record AppSettings(
     bool DockEnabled = true,
     bool Dark = true,
     string Palette = "terracotta",
-    string[]? PinnedApps = null
+    string[]? PinnedApps = null,
+    bool DesktopWidgetsEnabled = true,
+    string WallpaperStyle = "bauhaus",
+    double? WidgetLeftX = null,
+    double? WidgetLeftY = null,
+    double? WidgetRightX = null,
+    double? WidgetRightY = null
 );
 
 public sealed class SettingsService
@@ -36,7 +42,12 @@ public sealed class SettingsService
                 Left = settings.Left is double x && double.IsFinite(x) ? x : null,
                 Top = settings.Top is double y && double.IsFinite(y) ? y : null,
                 BarPosition = settings.BarPosition == "bottom" ? "bottom" : "top",
-                Palette = settings.Palette is "purple" or "ocean" ? settings.Palette : "terracotta"
+                Palette = settings.Palette is "purple" or "ocean" ? settings.Palette : "terracotta",
+                WallpaperStyle = settings.WallpaperStyle == "waves" ? "waves" : "bauhaus",
+                WidgetLeftX = settings.WidgetLeftX is double lx && double.IsFinite(lx) ? lx : null,
+                WidgetLeftY = settings.WidgetLeftY is double ly && double.IsFinite(ly) ? ly : null,
+                WidgetRightX = settings.WidgetRightX is double rx && double.IsFinite(rx) ? rx : null,
+                WidgetRightY = settings.WidgetRightY is double ry && double.IsFinite(ry) ? ry : null
             };
         }
         catch { return new AppSettings(); }

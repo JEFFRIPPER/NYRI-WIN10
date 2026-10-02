@@ -13,6 +13,9 @@ public sealed class ShellCoordinator : IDisposable
     private LauncherWindow? _launcher;
     private ControlCenterWindow? _control;
     private SettingsWindow? _settings;
+    private WallpaperWindow? _wallpaper;
+    private DesktopWidgetWindow? _leftWidgets;
+    private DesktopWidgetWindow? _rightWidgets;
     private MainWindow? _island;
     private bool _changingRoute;
     private bool _disposed;
@@ -44,6 +47,7 @@ public sealed class ShellCoordinator : IDisposable
         Bar.Show();
         if (Runtime.Settings.Load().DockEnabled) Dock.Show();
         var providers = Runtime.StartAsync();
+        ApplyDesktopWidgets();
         try
         {
             Apps = await Catalog.LoadAsync(_lifetime.Token);
@@ -70,6 +74,7 @@ public sealed class ShellCoordinator : IDisposable
         Bar.ApplyPosition(Runtime.Settings.Load().BarPosition);
         if (Runtime.Settings.Load().DockEnabled) Dock.Show();
         Router.Open(ShellPanel.Launcher);
+        ApplyDesktopWidgets();
     }
 
     public void ShowSettings()
@@ -83,6 +88,34 @@ public sealed class ShellCoordinator : IDisposable
         _settings.Show();
         _settings.Activate();
     }
+
+    public void ShowWallpaper()
+    {
+        Router.Close();
+        if (_wallpaper is null)
+        {
+            _wallpaper = new WallpaperWindow(this);
+            _wallpaper.Closed += (_, _) => _wallpaper = null;
+        }
+        _wallpaper.Show();
+        _wallpaper.Activate();
+    }
+
+    public void ApplyDesktopWidgets()
+    {
+        if (!Runtime.Settings.Load().DesktopWidgetsEnabled)
+        {
+            _leftWidgets?.Hide(); _rightWidgets?.Hide();
+            return;
+        }
+        if (Runtime.Resources is not { } resources) return;
+        _leftWidgets ??= new DesktopWidgetWindow(this, resources, rightSide: false);
+        _rightWidgets ??= new DesktopWidgetWindow(this, resources, rightSide: true);
+        _leftWidgets.Show(); _rightWidgets.Show();
+        PositionDesktopWidgets();
+    }
+
+    public void PositionDesktopWidgets() { _leftWidgets?.Position(); _rightWidgets?.Position(); }
 
     public void TogglePin(LaunchableApp app)
     {
@@ -164,6 +197,9 @@ public sealed class ShellCoordinator : IDisposable
         _launcher?.Close();
         _control?.Close();
         _settings?.Close();
+        _wallpaper?.Close();
+        _leftWidgets?.Close();
+        _rightWidgets?.Close();
         _island?.Close();
         Dock.Close();
         Bar.Close();

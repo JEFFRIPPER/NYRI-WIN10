@@ -23,6 +23,7 @@ public sealed class ShellRuntime : IDisposable
     public TimerService Timers { get; }
     public MediaSessionService Media { get; }
     public AudioService? Audio { get; private set; }
+    public SystemResourceService? Resources { get; private set; }
     public bool IsStarted => _startTask?.IsCompletedSuccessfully == true && !_disposed;
     public bool IsDisposed => _disposed;
 
@@ -53,6 +54,7 @@ public sealed class ShellRuntime : IDisposable
     {
         if (_disposed || !_startSystemProviders) return;
         StartOptional("audio", "Звук", () => Audio = new AudioService(_dispatcher));
+        StartOptional("resources", "Показатели системы", () => Resources = new SystemResourceService(_dispatcher));
         StartOptional("network", "Сеть и VPN", () => _systemStatus = new SystemStatusService(Hub));
         StartOptional("privacy", "Микрофон и камера", () => _privacy = new PrivacyService(Hub));
         if (_disposed) return;
@@ -143,6 +145,7 @@ public sealed class ShellRuntime : IDisposable
         _clipboardExpiry?.Dispose();
         _clipboard?.Dispose();
         Audio?.Dispose();
+        Resources?.Dispose();
         Media.Dispose();
         _systemStatus?.Dispose();
         _privacy?.Dispose();

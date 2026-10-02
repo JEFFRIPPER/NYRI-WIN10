@@ -1,6 +1,7 @@
 <Window x:Class="Nyri.Win10.Shell.LauncherWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Style="{DynamicResource ShellWindowStyle}"
         Foreground="{DynamicResource OnSurfaceBrush}" Title="NYRI — поиск" Width="650" Height="560" WindowStyle="None" ResizeMode="NoResize"
         AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False" Topmost="True"
         Loaded="Window_Loaded" Deactivated="Window_Deactivated" PreviewKeyDown="Window_PreviewKeyDown">
