@@ -30,7 +30,10 @@ public partial class DesktopWidgetWindow : Window
         _resources = resources ?? throw new ArgumentNullException(nameof(resources));
         _rightSide = rightSide;
         InitializeComponent();
-        Width = rightSide ? 270 : 220;
+        // Width is fixed while WPF computes the height of the transparent window.
+        // Native style changes during source initialization can otherwise feed a
+        // one-pixel transient width back into SizeToContent=Height.
+        MinWidth = MaxWidth = Width = rightSide ? 270 : 220;
         LeftWidgets.Visibility = rightSide ? Visibility.Collapsed : Visibility.Visible;
         RightWidgets.Visibility = rightSide ? Visibility.Visible : Visibility.Collapsed;
         _clock = new DispatcherTimer(DispatcherPriority.Background, Dispatcher)
