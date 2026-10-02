@@ -17,7 +17,15 @@ public partial class SettingsWindow : Window
         PositionBox.SelectedValue = saved.BarPosition;
         DockCheck.IsChecked = saved.DockEnabled;
         WidgetsCheck.IsChecked = saved.DesktopWidgetsEnabled;
+        ClipboardCheck.IsChecked = saved.ClipboardHistoryEnabled;
         _ready = true;
+        shell.Theme.Changed += Services_Changed;
+        shell.Runtime.ClipboardHistory.Changed += Services_Changed;
+        Closed += (_, _) =>
+        {
+            shell.Theme.Changed -= Services_Changed;
+            shell.Runtime.ClipboardHistory.Changed -= Services_Changed;
+        };
         Loaded += (_, _) =>
         {
             var work = SystemParameters.WorkArea;
@@ -28,6 +36,18 @@ public partial class SettingsWindow : Window
             Left = work.Left + (work.Width - Width) / 2;
             Top = work.Top + (work.Height - Height) / 2;
         };
+    }
+    private void Services_Changed(object? sender, EventArgs e)
+    {
+        var ready = _ready;
+        _ready = false;
+        try
+        {
+            DarkCheck.IsChecked = _shell.Theme.Dark;
+            PaletteBox.SelectedValue = _shell.Theme.Palette;
+            ClipboardCheck.IsChecked = _shell.Runtime.ClipboardHistory.Enabled;
+        }
+        finally { _ready = ready; }
     }
     private void Theme_Changed(object sender, RoutedEventArgs e)
     {
@@ -56,6 +76,14 @@ public partial class SettingsWindow : Window
     private void Control_Click(object sender, RoutedEventArgs e) => _shell.Router.Open(ShellPanel.ControlCenter);
     private void Search_Click(object sender, RoutedEventArgs e) => _shell.Router.Open(ShellPanel.Launcher);
     private void Wallpaper_Click(object sender, RoutedEventArgs e) => _shell.ShowWallpaper();
+    private void Clipboard_Click(object sender, RoutedEventArgs e) => _shell.Router.Open(ShellPanel.Clipboard);
+    private void Clipboard_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!_ready) return;
+        var enabled = ClipboardCheck.IsChecked == true;
+        _shell.Runtime.Settings.Update(saved => saved with { ClipboardHistoryEnabled = enabled });
+        _shell.Runtime.ClipboardHistory.SetEnabled(enabled);
+    }
     private void Widgets_Changed(object sender, RoutedEventArgs e)
     {
         if (!_ready) return;

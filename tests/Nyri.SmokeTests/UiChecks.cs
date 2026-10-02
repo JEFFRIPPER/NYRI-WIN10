@@ -11,23 +11,48 @@ internal static class UiChecks
 {
     public static void Run(Action<bool, string> check, string[] args)
     {
+        var clipboardOnly = args.Contains("--clipboard-ui");
         var app = new App();
         app.InitializeComponent();
         var theme = new ThemeService(app.Resources);
-        using var runtime = new ShellRuntime(startSystemProviders: false);
+        var settingsDirectory = Path.Combine(Path.GetTempPath(), "NyriUiCheck-" + Guid.NewGuid());
+        using var runtime = new ShellRuntime(startSystemProviders: false, settings: new SettingsService(settingsDirectory));
         using var shell = new ShellCoordinator(runtime, theme);
         var launcher = new LauncherWindow(shell);
-        CatalogChecks.RunLauncherChecks(launcher, check);
+        if (!clipboardOnly) CatalogChecks.RunLauncherChecks(launcher, check);
         var control = new ControlCenterWindow(shell);
         var settings = new SettingsWindow(shell);
         var live = new MainWindow(runtime);
         var wallpaper = new WallpaperWindow(shell);
+        var clipboard = new ClipboardWindow(shell);
+        runtime.ClipboardHistory.SetEnabled(true);
+        runtime.ClipboardHistory.Add("Пример заметки\nВторая строка остаётся на месте.");
+        runtime.ClipboardHistory.Add("Поиск находит текст внутри любой строки записи.");
+        var clipboardSearch = (TextBox)clipboard.FindName("SearchBox");
+        var clipboardList = (ListBox)clipboard.FindName("EntriesList");
+        clipboardSearch.Text = "Вторая строка";
+        check(clipboardList.Items.Count == 1, "Clipboard panel searches the complete multiline value without reading Windows clipboard");
+        clipboardSearch.Clear();
+        check(clipboardList.Items.Count == 2, "Clipboard panel receives shared history events without showing a window");
+        check(((CheckBox)settings.FindName("ClipboardCheck")).IsChecked == true,
+            "Settings reflect a history toggle made from another shell surface");
         using var resources = new SystemResourceService(app.Dispatcher);
         var leftWidgets = new DesktopWidgetWindow(shell, resources, rightSide: false);
         var rightWidgets = new DesktopWidgetWindow(shell, resources, rightSide: true);
-        Window[] windows = [shell.Bar, shell.Dock, launcher, control, settings, live, wallpaper, leftWidgets, rightWidgets];
+        Window[] windows = args.Contains("--clipboard-ui")
+            ? [clipboard, settings]
+            : [shell.Bar, shell.Dock, launcher, control, settings, live, wallpaper, leftWidgets, rightWidgets, clipboard];
         try
         {
+            if (clipboardOnly)
+            {
+                theme.Apply(false, "ocean");
+                check(Equals(((ComboBox)settings.FindName("PaletteBox")).SelectedValue, "ocean") && !File.Exists(Path.Combine(settingsDirectory, "settings.json")),
+                    "Shared theme changes update settings controls without silently rewriting preferences");
+                theme.Apply(true, "terracotta");
+            }
+            else
+            {
             var originalInk = ((SolidColorBrush)settings.Foreground).Color;
             theme.Apply(false, "ocean");
             check(((SolidColorBrush)settings.Foreground).Color != originalInk,
@@ -47,11 +72,13 @@ internal static class UiChecks
             check(!pixelsA.SequenceEqual(pixelsB), "Wallpaper selection produces distinct actual preview images");
             check(resources.MemoryPercent is null or >= 0 and <= 100 && resources.CpuPercent is null or >= 0 and <= 100,
                 "Desktop resource readings are normalized or explicitly unavailable");
+            }
             var outputIndex = Array.IndexOf(args, "--render-ui");
             var outputDirectory = outputIndex >= 0 && outputIndex + 1 < args.Length ? Path.GetFullPath(args[outputIndex + 1]) : null;
             if (outputDirectory is not null) Directory.CreateDirectory(outputDirectory);
             foreach (var window in windows)
             {
+                check(!window.IsVisible, window.GetType().Name + " remains hidden during preview checks");
                 var content = (FrameworkElement)window.Content;
                 var width = window == shell.Bar ? 1280 : window == shell.Dock ? 500 : window.Width;
                 var height = window == shell.Dock ? 76 : double.IsNaN(window.Height) ? 480 : window.Height;
@@ -76,6 +103,12 @@ internal static class UiChecks
         {
             launcher.Close(); control.Close(); settings.Close(); live.Close();
             wallpaper.Close(); leftWidgets.Close(); rightWidgets.Close();
+            clipboard.Close();
+            if (Directory.Exists(settingsDirectory))
+            {
+                foreach (var file in Directory.EnumerateFiles(settingsDirectory)) File.Delete(file);
+                Directory.Delete(settingsDirectory);
+            }
         }
     }
 }

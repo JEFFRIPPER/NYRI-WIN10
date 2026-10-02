@@ -12,6 +12,7 @@ public sealed class ShellCoordinator : IDisposable
     private readonly CancellationTokenSource _lifetime = new();
     private LauncherWindow? _launcher;
     private ControlCenterWindow? _control;
+    private ClipboardWindow? _clipboard;
     private SettingsWindow? _settings;
     private WallpaperWindow? _wallpaper;
     private DesktopWidgetWindow? _leftWidgets;
@@ -161,6 +162,7 @@ public sealed class ShellCoordinator : IDisposable
             var route = Router.Current;
             if (route.Panel != ShellPanel.Launcher) _launcher?.Hide();
             if (route.Panel != ShellPanel.ControlCenter) _control?.Hide();
+            if (route.Panel != ShellPanel.Clipboard) _clipboard?.Hide();
             if (route.Panel != ShellPanel.Live) _island?.Hide();
             if (route.Panel == ShellPanel.Launcher)
             {
@@ -183,6 +185,11 @@ public sealed class ShellCoordinator : IDisposable
                 _island.Reveal();
                 _island.ExpandForPanel();
             }
+            else if (route.Panel == ShellPanel.Clipboard)
+            {
+                _clipboard ??= new ClipboardWindow(this);
+                _clipboard.Reveal();
+            }
         }
         finally { _changingRoute = false; }
     }
@@ -196,6 +203,7 @@ public sealed class ShellCoordinator : IDisposable
         Router.Dispose();
         _launcher?.Close();
         _control?.Close();
+        _clipboard?.Close();
         _settings?.Close();
         _wallpaper?.Close();
         _leftWidgets?.Close();

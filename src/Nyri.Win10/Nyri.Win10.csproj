@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>NYRI-WIN10</AssemblyName>
     <RootNamespace>Nyri.Win10</RootNamespace>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Authors>JEFFRIPPER</Authors>
     <Description>Nyri-inspired Material desktop shell for Windows 10 and 11.</Description>
   </PropertyGroup>

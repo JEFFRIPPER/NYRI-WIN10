@@ -16,7 +16,8 @@ public sealed record AppSettings(
     double? WidgetLeftX = null,
     double? WidgetLeftY = null,
     double? WidgetRightX = null,
-    double? WidgetRightY = null
+    double? WidgetRightY = null,
+    bool ClipboardHistoryEnabled = false
 );
 
 public sealed class SettingsService

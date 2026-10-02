@@ -12,13 +12,15 @@ public sealed class ClipboardListener : IDisposable
     private readonly HwndSource? _source;
     private readonly IntPtr _hwnd;
     private readonly Action<string> _onClipboard;
+    private readonly Action<string>? _onHistory;
     private readonly Dispatcher _dispatcher;
     private bool _disposed;
 
-    public ClipboardListener(Window window, Action<string> onClipboard)
+    public ClipboardListener(Window window, Action<string> onClipboard, Action<string>? onHistory = null)
     {
         _dispatcher = window.Dispatcher;
         _onClipboard = onClipboard;
+        _onHistory = onHistory;
         _hwnd = new WindowInteropHelper(window).Handle;
         _source = HwndSource.FromHwnd(_hwnd);
         if (_source is null) throw new InvalidOperationException("Clipboard listener requires a live window handle.");
@@ -45,14 +47,19 @@ public sealed class ClipboardListener : IDisposable
             if (_disposed) return;
             try
             {
+                if (!ClipboardPolicy.TryRead(_hwnd, out var policy, out var sequence) || !policy.AllowMonitoring) return;
                 if (Clipboard.ContainsText())
                 {
-                    var text = Clipboard.GetText().ReplaceLineEndings(" ");
-                    _onClipboard(text.Length > 72 ? text[..72] + "…" : text);
+                    var text = Clipboard.GetText();
+                    if (!ClipboardPolicy.IsCurrentSequence(sequence)) return;
+                    var preview = (text.Length > 72 ? text[..72] + "…" : text).ReplaceLineEndings(" ");
+                    _onClipboard(preview);
+                    if (policy.AllowHistory) _onHistory?.Invoke(text);
                 }
                 else if (Clipboard.ContainsFileDropList())
                 {
-                    _onClipboard($"Файлов в буфере: {Clipboard.GetFileDropList().Count}");
+                    var count = Clipboard.GetFileDropList().Count;
+                    if (ClipboardPolicy.IsCurrentSequence(sequence)) _onClipboard($"Файлов в буфере: {count}");
                 }
             }
             catch

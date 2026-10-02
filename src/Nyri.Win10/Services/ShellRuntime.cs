@@ -22,6 +22,7 @@ public sealed class ShellRuntime : IDisposable
     public SettingsService Settings { get; }
     public TimerService Timers { get; }
     public MediaSessionService Media { get; }
+    public ClipboardHistoryService ClipboardHistory { get; }
     public AudioService? Audio { get; private set; }
     public SystemResourceService? Resources { get; private set; }
     public bool IsStarted => _startTask?.IsCompletedSuccessfully == true && !_disposed;
@@ -29,11 +30,13 @@ public sealed class ShellRuntime : IDisposable
 
     // Disabling providers permits lifecycle tests without touching Windows capture,
     // media or network state. Production always uses the default constructor.
-    public ShellRuntime(bool startSystemProviders = true)
+    public ShellRuntime(bool startSystemProviders = true, SettingsService? settings = null)
     {
         _startSystemProviders = startSystemProviders;
         Hub = new ActivityHub();
-        Settings = new SettingsService();
+        Settings = settings ?? new SettingsService();
+        ClipboardHistory = new ClipboardHistoryService(_dispatcher);
+        ClipboardHistory.SetEnabled(Settings.Load().ClipboardHistoryEnabled);
         Timers = new TimerService(Hub);
         Media = new MediaSessionService(Hub);
     }
@@ -98,7 +101,7 @@ public sealed class ShellRuntime : IDisposable
         if (_clipboard is not null) return;
         if (new WindowInteropHelper(window).Handle == IntPtr.Zero)
             throw new InvalidOperationException("Attach clipboard after the window source is initialized.");
-        StartOptional("clipboard", "Буфер обмена", () => _clipboard = new ClipboardListener(window, PublishClipboard));
+        StartOptional("clipboard", "Буфер обмена", () => _clipboard = new ClipboardListener(window, PublishClipboard, text => ClipboardHistory.Add(text)));
     }
 
     public void PublishClipboard(string text)
@@ -144,6 +147,7 @@ public sealed class ShellRuntime : IDisposable
         _clipboardExpiry?.Cancel();
         _clipboardExpiry?.Dispose();
         _clipboard?.Dispose();
+        ClipboardHistory.Dispose();
         Audio?.Dispose();
         Resources?.Dispose();
         Media.Dispose();

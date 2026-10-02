@@ -13,6 +13,7 @@
             <Button Content="Шторка" Style="{DynamicResource TonalButtonStyle}" Click="Control_Click" Margin="0,0,0,8"/>
             <Button Content="Поиск приложений" Style="{DynamicResource ShellButtonStyle}" Click="Search_Click" Margin="0,0,0,8"/>
             <Button Content="Обои" Style="{DynamicResource ShellButtonStyle}" Click="Wallpaper_Click" Margin="0,0,0,8"/>
+            <Button Content="Буфер обмена" Style="{DynamicResource ShellButtonStyle}" Click="Clipboard_Click" Margin="0,0,0,8"/>
             <Button Content="Выход из NYRI" Style="{DynamicResource OutlinedButtonStyle}" Click="Exit_Click" Margin="0,24,0,0"/>
         </StackPanel>
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
@@ -32,6 +33,11 @@
                     <ComboBox x:Name="PositionBox" SelectedValuePath="Tag" SelectionChanged="Position_Changed" Padding="10"><ComboBoxItem Content="Сверху" Tag="top"/><ComboBoxItem Content="Снизу" Tag="bottom"/></ComboBox>
                     <CheckBox x:Name="DockCheck" Content="Показывать док" Foreground="{DynamicResource OnSurfaceBrush}" Margin="0,16,0,0" Checked="Dock_Changed" Unchecked="Dock_Changed"/>
                     <CheckBox x:Name="WidgetsCheck" Content="Виджеты рабочего стола" Foreground="{DynamicResource OnSurfaceBrush}" Margin="0,16,0,0" Checked="Widgets_Changed" Unchecked="Widgets_Changed"/>
+                </StackPanel></Border>
+                <Border Style="{DynamicResource ShellCardStyle}" Padding="20" Margin="0,0,0,12"><StackPanel>
+                    <TextBlock Text="Буфер обмена" Style="{DynamicResource TitleMediumTextStyle}"/>
+                    <CheckBox x:Name="ClipboardCheck" Content="Сохранять историю текста" Checked="Clipboard_Changed" Unchecked="Clipboard_Changed" Margin="0,14,0,10"/>
+                    <TextBlock Text="История хранится только пока NYRI открыт. Отключение очищает записи." Foreground="{DynamicResource MutedBrush}" TextWrapping="Wrap"/>
                 </StackPanel></Border>
                 <Border Style="{DynamicResource ShellCardStyle}" Padding="20"><StackPanel>
                     <TextBlock Text="Клавиши" Style="{DynamicResource TitleMediumTextStyle}"/>

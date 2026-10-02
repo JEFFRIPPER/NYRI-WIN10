@@ -30,6 +30,7 @@ public partial class BarWindow : Window
         _hotkeys.Register(2, 0x4E, () => _shell.Router.Toggle(ShellPanel.ControlCenter));
         _hotkeys.Register(3, 0x49, _shell.ShowSettings);
         _hotkeys.Register(4, 0x51, () => Application.Current.Shutdown());
+        _hotkeys.Register(5, 0x56, () => _shell.Router.Toggle(ShellPanel.Clipboard));
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e)

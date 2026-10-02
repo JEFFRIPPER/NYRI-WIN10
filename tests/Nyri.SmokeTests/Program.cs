@@ -9,7 +9,13 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
-        if (args.Contains("--ui-only")) { UiChecks.Run(Check, args); return; }
+        if (args.Contains("--clipboard-only"))
+        {
+            ClipboardHistoryChecks.Run(Check);
+            ClipboardPolicyChecks.Run(Check);
+            return;
+        }
+        if (args.Contains("--ui-only") || args.Contains("--clipboard-ui")) { UiChecks.Run(Check, args); return; }
         using (var primary = new SingleInstanceService(@"Local\NyriSmokeTest." + Guid.NewGuid()))
         {
             // The service identity is tested below with another independent owner.
@@ -102,6 +108,8 @@ internal static class Program
         }
         finally { Registry.CurrentUser.DeleteSubKeyTree(path, false); }
         CatalogChecks.Run(Check);
+        ClipboardHistoryChecks.Run(Check);
+        ClipboardPolicyChecks.Run(Check);
         if (args.Contains("--check-audio")) AudioChecks.Run(Check);
         UiChecks.Run(Check, args);
     }
