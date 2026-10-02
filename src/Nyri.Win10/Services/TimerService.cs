@@ -10,6 +10,7 @@ public sealed class TimerService : IDisposable
     private DateTimeOffset? _countdownEnd;
     private DateTimeOffset? _stopwatchStart;
     private CancellationTokenSource? _completionCts;
+    private bool _disposed;
 
     public TimerService(ActivityHub hub)
     {
@@ -19,6 +20,8 @@ public sealed class TimerService : IDisposable
 
     public void StartCountdown(TimeSpan duration)
     {
+        if (_disposed) return;
+        if (duration <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(duration));
         _completionCts?.Cancel();
         _stopwatchStart = null;
         _countdownEnd = DateTimeOffset.Now.Add(duration);
@@ -28,6 +31,7 @@ public sealed class TimerService : IDisposable
 
     public void ToggleStopwatch()
     {
+        if (_disposed) return;
         if (_stopwatchStart is not null)
         {
             Stop();
@@ -43,6 +47,7 @@ public sealed class TimerService : IDisposable
 
     public void Stop()
     {
+        if (_disposed) return;
         _countdownEnd = null;
         _stopwatchStart = null;
         _ticker.Stop();
@@ -52,6 +57,7 @@ public sealed class TimerService : IDisposable
 
     private void OnTick(object? sender, EventArgs e)
     {
+        if (_disposed) return;
         if (_countdownEnd is not null)
             PublishCountdown();
         else if (_stopwatchStart is not null)
@@ -98,6 +104,7 @@ public sealed class TimerService : IDisposable
 
     private async void PublishCompleted()
     {
+        if (_disposed) return;
         _completionCts?.Cancel();
         _completionCts?.Dispose();
         _completionCts = new CancellationTokenSource();
@@ -110,7 +117,7 @@ public sealed class TimerService : IDisposable
         try
         {
             await Task.Delay(TimeSpan.FromSeconds(8), token);
-            _hub.Remove("timer");
+            if (!_disposed) _hub.Remove("timer");
         }
         catch (TaskCanceledException)
         {
@@ -119,6 +126,8 @@ public sealed class TimerService : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         _ticker.Stop();
         _ticker.Tick -= OnTick;
         _completionCts?.Cancel();

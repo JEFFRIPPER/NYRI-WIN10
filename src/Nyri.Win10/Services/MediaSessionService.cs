@@ -1,4 +1,4 @@
-using System.Windows;
+using System.Windows.Threading;
 using Nyri.Win10.Models;
 using Windows.Media.Control;
 
@@ -7,26 +7,45 @@ namespace Nyri.Win10.Services;
 public sealed class MediaSessionService : IDisposable
 {
     private readonly ActivityHub _hub;
+    private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     private GlobalSystemMediaTransportControlsSessionManager? _manager;
     private GlobalSystemMediaTransportControlsSession? _session;
-    private bool _disposed;
+    private volatile bool _disposed;
+    private Task? _startTask;
+    public bool IsAvailable { get; private set; }
 
     public MediaSessionService(ActivityHub hub)
     {
         _hub = hub;
     }
 
-    public async Task StartAsync()
+    public Task StartAsync()
+    {
+        if (_disposed || _dispatcher.HasShutdownStarted) return Task.CompletedTask;
+        if (!_dispatcher.CheckAccess()) return _dispatcher.InvokeAsync(StartAsync).Task.Unwrap();
+        return _startTask ??= StartCoreAsync();
+    }
+
+    private async Task StartCoreAsync()
     {
         try
         {
-            _manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            var manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+            if (_disposed) return;
+            _manager = manager;
             _manager.CurrentSessionChanged += OnCurrentSessionChanged;
             _manager.SessionsChanged += OnSessionsChanged;
+            IsAvailable = true;
+            _hub.Remove("provider:media");
             await AttachCurrentSessionAsync();
         }
-        catch
+        catch (Exception ex)
         {
+            IsAvailable = false;
+            AppDiagnostics.Write($"Media provider unavailable: {ex.GetType().Name}: {ex.Message}");
+            OnUi(() => _hub.Upsert(new IslandActivity("provider:media", IslandActivityKind.System,
+                "Медиа: недоступно", "Windows не предоставила доступ к медиасессиям", "!",
+                DateTimeOffset.Now, Priority: 85)));
             RemoveMedia();
         }
     }
@@ -34,14 +53,14 @@ public sealed class MediaSessionService : IDisposable
         GlobalSystemMediaTransportControlsSessionManager sender,
         CurrentSessionChangedEventArgs args)
     {
-        await AttachCurrentSessionAsync();
+        await OnUiAsync(AttachCurrentSessionAsync);
     }
 
     private async void OnSessionsChanged(
         GlobalSystemMediaTransportControlsSessionManager sender,
         SessionsChangedEventArgs args)
     {
-        await AttachCurrentSessionAsync();
+        await OnUiAsync(AttachCurrentSessionAsync);
     }
 
     private async Task AttachCurrentSessionAsync()
@@ -66,18 +85,19 @@ public sealed class MediaSessionService : IDisposable
         GlobalSystemMediaTransportControlsSession sender,
         MediaPropertiesChangedEventArgs args)
     {
-        await PublishAsync();
+        if (!_disposed && ReferenceEquals(sender, _session)) await OnUiAsync(PublishAsync);
     }
 
     private async void OnPlaybackInfoChanged(
         GlobalSystemMediaTransportControlsSession sender,
         PlaybackInfoChangedEventArgs args)
     {
-        await PublishAsync();
+        if (!_disposed && ReferenceEquals(sender, _session)) await OnUiAsync(PublishAsync);
     }
 
     private async Task PublishAsync()
     {
+        if (_disposed) return;
         var session = _session;
         if (session is null)
         {
@@ -94,6 +114,7 @@ public sealed class MediaSessionService : IDisposable
                 return;
             }
             var props = await session.TryGetMediaPropertiesAsync();
+            if (_disposed || !ReferenceEquals(session, _session)) return;
             var title = string.IsNullOrWhiteSpace(props.Title)
                 ? session.SourceAppUserModelId
                 : props.Title;
@@ -101,19 +122,23 @@ public sealed class MediaSessionService : IDisposable
                 ? "Сейчас воспроизводится"
                 : props.Artist;
 
-            OnUi(() => _hub.Upsert(new IslandActivity(
-                "media",
-                IslandActivityKind.Media,
-                title,
-                detail,
-                "♪",
-                DateTimeOffset.Now,
-                true,
-                50)));
+            OnUi(() =>
+            {
+                if (!ReferenceEquals(session, _session)) return;
+                _hub.Upsert(new IslandActivity(
+                    "media",
+                    IslandActivityKind.Media,
+                    title,
+                    detail,
+                    "♪",
+                    DateTimeOffset.Now,
+                    true,
+                    50));
+            });
         }
         catch
         {
-            RemoveMedia();
+            if (ReferenceEquals(session, _session)) RemoveMedia();
         }
     }
 
@@ -122,12 +147,28 @@ public sealed class MediaSessionService : IDisposable
         OnUi(() => _hub.Remove("media"));
     }
 
-    private static void OnUi(Action action)
-    {        var dispatcher = Application.Current?.Dispatcher;
-        if (dispatcher is null || dispatcher.CheckAccess())
+    private void OnUi(Action action)
+    {
+        if (_disposed || _dispatcher.HasShutdownStarted) return;
+        if (_dispatcher.CheckAccess())
             action();
         else
-            dispatcher.BeginInvoke(action);
+            _dispatcher.BeginInvoke(() => { if (!_disposed) action(); });
+    }
+
+    private async Task OnUiAsync(Func<Task> action)
+    {
+        if (_disposed || _dispatcher.HasShutdownStarted) return;
+        try
+        {
+            if (_dispatcher.CheckAccess()) await action();
+            else await _dispatcher.InvokeAsync(() => _disposed ? Task.CompletedTask : action()).Task.Unwrap();
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Write($"Media session refresh failed: {ex.GetType().Name}: {ex.Message}");
+            RemoveMedia();
+        }
     }
 
     private void DetachSession()
@@ -172,13 +213,16 @@ public sealed class MediaSessionService : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
         _disposed = true;
+        IsAvailable = false;
         DetachSession();
 
         if (_manager is not null)
         {
             _manager.CurrentSessionChanged -= OnCurrentSessionChanged;
             _manager.SessionsChanged -= OnSessionsChanged;
+            _manager = null;
         }
     }
 }

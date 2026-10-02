@@ -1,5 +1,5 @@
 using System.Net.NetworkInformation;
-using System.Windows;
+using System.Windows.Threading;
 using Nyri.Win10.Models;
 
 namespace Nyri.Win10.Services;
@@ -15,8 +15,10 @@ public sealed class SystemStatusService : IDisposable
     ];
 
     private readonly ActivityHub _hub;
+    private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
     private string _lastVpnKey = "";
     private CancellationTokenSource? _vpnFlashCts;
+    private volatile bool _disposed;
 
     public SystemStatusService(ActivityHub hub)
     {
@@ -33,35 +35,47 @@ public sealed class SystemStatusService : IDisposable
         => Refresh();
     private void Refresh()
     {
-        var dispatcher = Application.Current?.Dispatcher;
-        if (dispatcher is not null && !dispatcher.CheckAccess())
+        if (_disposed || _dispatcher.HasShutdownStarted) return;
+        if (!_dispatcher.CheckAccess())
         {
-            dispatcher.BeginInvoke(Refresh);
+            _dispatcher.BeginInvoke(Refresh);
             return;
         }
 
-        if (NetworkInterface.GetIsNetworkAvailable())
+        try
         {
-            _hub.Remove("network");
-        }
-        else
-        {
-            _hub.Upsert(new IslandActivity(
-                "network",
-                IslandActivityKind.Network,
-                "Нет сети",
-                "Проверь подключение",
-                "!",
-                DateTimeOffset.Now,
-                true,
-                90));
-        }
+            if (NetworkInterface.GetIsNetworkAvailable())
+            {
+                _hub.Remove("network");
+            }
+            else
+            {
+                _hub.Upsert(new IslandActivity(
+                    "network",
+                    IslandActivityKind.Network,
+                    "Нет сети",
+                    "Проверь подключение",
+                    "!",
+                    DateTimeOffset.Now,
+                    true,
+                    90));
+            }
 
-        PublishVpn();
+            PublishVpn();
+            _hub.Remove("provider:network");
+        }
+        catch (Exception ex)
+        {
+            AppDiagnostics.Write($"Network provider unavailable: {ex.GetType().Name}: {ex.Message}");
+            _hub.Upsert(new IslandActivity("provider:network", IslandActivityKind.System,
+                "Сеть и VPN: недоступно", "Windows не предоставила сведения о сетевых интерфейсах",
+                "!", DateTimeOffset.Now, Priority: 85));
+        }
     }
 
     private void PublishVpn()
     {
+        if (_disposed) return;
         var names = NetworkInterface.GetAllNetworkInterfaces()
             .Where(IsActiveVpn)
             .Select(x => x.Name)
@@ -99,6 +113,7 @@ public sealed class SystemStatusService : IDisposable
 
     private async void FlashVpn(string title, string detail)
     {
+        if (_disposed) return;
         _vpnFlashCts?.Cancel();
         _vpnFlashCts?.Dispose();
         _vpnFlashCts = new CancellationTokenSource();
@@ -116,7 +131,7 @@ public sealed class SystemStatusService : IDisposable
         try
         {
             await Task.Delay(5000, token);
-            _hub.Remove("vpn:flash");
+            if (!_disposed) _hub.Remove("vpn:flash");
         }
         catch (TaskCanceledException)
         {
@@ -136,6 +151,8 @@ public sealed class SystemStatusService : IDisposable
     }
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         NetworkChange.NetworkAvailabilityChanged -= OnNetworkAvailabilityChanged;
         NetworkChange.NetworkAddressChanged -= OnNetworkAddressChanged;
         _vpnFlashCts?.Cancel();

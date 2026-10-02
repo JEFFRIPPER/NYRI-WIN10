@@ -7,7 +7,7 @@ using Nyri.Win10.Services;
 internal static class Program
 {
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         using (var primary = new SingleInstanceService(@"Local\NyriSmokeTest." + Guid.NewGuid()))
         {
@@ -29,6 +29,40 @@ internal static class Program
         }
         using (var restarted = new SingleInstanceService(identity))
             Check(restarted.IsPrimary, "Guard is released on shutdown");
+        using (var runtime = new ShellRuntime(startSystemProviders: false))
+        {
+            var start = runtime.StartAsync();
+            Check(ReferenceEquals(start, runtime.StartAsync()), "Shell runtime starts providers only once");
+            start.GetAwaiter().GetResult();
+            runtime.PublishClipboard("first");
+            runtime.PublishClipboard("latest");
+            Check(runtime.Hub.Activities.Single(x => x.Id == "clipboard").Detail == "latest", "Shared clipboard state replaces the previous event");
+            runtime.Timers.StartCountdown(TimeSpan.FromMinutes(5));
+            Check(runtime.Hub.Activities.Any(x => x.Id == "timer"), "Timer publishes into the shared shell hub");
+            runtime.Dispose();
+            var count = runtime.Hub.Activities.Count;
+            runtime.PublishClipboard("after shutdown");
+            runtime.Hub.Upsert(new IslandActivity("late", IslandActivityKind.System, "late", "", "", DateTimeOffset.Now));
+            Check(runtime.IsDisposed && runtime.Hub.Activities.Count == count, "Shutdown prevents late provider mutations");
+        }
+        using (var router = new PanelRouter())
+        {
+            router.Open(ShellPanel.Launcher);
+            router.Open(ShellPanel.ControlCenter, "privacy");
+            Check(router.Current.Panel == ShellPanel.ControlCenter && router.Current.Page == "privacy", "Panel navigation replaces the prior transient route");
+            router.Toggle(ShellPanel.ControlCenter, "privacy");
+            Check(router.Current.Panel == ShellPanel.None, "Repeating the current route closes its panel");
+        }
+        var settingsDirectory = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "NyriSettingsTest-" + Guid.NewGuid());
+        try
+        {
+            var settings = new SettingsService(settingsDirectory);
+            settings.Save(new AppSettings(20, 30, "bottom", false, false, "ocean"));
+            settings.Update(saved => saved with { Left = null, Top = null });
+            var restored = settings.Load();
+            Check(restored.BarPosition == "bottom" && !restored.DockEnabled && !restored.Dark && restored.Palette == "ocean", "Resetting island position preserves shell preferences");
+        }
+        finally { if (System.IO.Directory.Exists(settingsDirectory)) { foreach (var file in System.IO.Directory.EnumerateFiles(settingsDirectory)) System.IO.File.Delete(file); System.IO.Directory.Delete(settingsDirectory); } }
         var hub = new ActivityHub();
         var privacy = new IslandActivity("privacy:microphone", IslandActivityKind.Microphone,
             "Mic", "test", "M", DateTimeOffset.Now, Priority: 100);
@@ -66,6 +100,9 @@ internal static class Program
             Check(apps.Count == 0, "Missing usage metadata is not reported active");
         }
         finally { Registry.CurrentUser.DeleteSubKeyTree(path, false); }
+        CatalogChecks.Run(Check);
+        if (args.Contains("--check-audio")) AudioChecks.Run(Check);
+        UiChecks.Run(Check, args);
     }
 
     private static void Check(bool result, string message)

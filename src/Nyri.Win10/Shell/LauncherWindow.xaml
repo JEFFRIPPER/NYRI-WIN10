@@ -1,0 +1,31 @@
+<Window x:Class="Nyri.Win10.Shell.LauncherWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Foreground="{DynamicResource OnSurfaceBrush}" Title="NYRI — поиск" Width="650" Height="560" WindowStyle="None" ResizeMode="NoResize"
+        AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False" Topmost="True"
+        Loaded="Window_Loaded" Deactivated="Window_Deactivated" PreviewKeyDown="Window_PreviewKeyDown">
+    <Border Style="{DynamicResource ShellCardStyle}" Padding="24" Margin="8">
+        <Grid>
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+            <TextBox x:Name="SearchBox" Style="{DynamicResource ShellTextBoxStyle}" FontSize="18" MinHeight="52" TextChanged="Search_TextChanged" AutomationProperties.Name="Поиск приложений и окон"/>
+            <DockPanel Grid.Row="1" Margin="0,16,0,12">
+                <TextBlock Text="Приложения и окна" Style="{DynamicResource TitleMediumTextStyle}" VerticalAlignment="Center"/>
+                <TextBlock Text="таймер 5м" Foreground="{DynamicResource MutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+            </DockPanel>
+            <ListBox x:Name="Results" Grid.Row="2" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" MouseDoubleClick="Results_MouseDoubleClick" Foreground="{DynamicResource OnSurfaceBrush}">
+                <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="6"/><Setter Property="Margin" Value="0,2"/></Style></ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Height="48">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="46"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <Grid Width="32" Height="32"><TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="23" VerticalAlignment="Center" HorizontalAlignment="Center"/><Image Source="{Binding Icon}" Width="32" Height="32"/></Grid>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Detail}" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextTrimming="CharacterEllipsis"/></StackPanel>
+                            <TextBlock Grid.Column="2" Text="↵" Foreground="{DynamicResource MutedBrush}" VerticalAlignment="Center" Margin="10,0,4,0"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="StatusText" Grid.Row="3" Text="Начни вводить название · Enter открыть · Ctrl+Enter закрепить · Esc закрыть" Foreground="{DynamicResource MutedBrush}" FontSize="11" TextWrapping="Wrap" Margin="0,14,0,0"/>
+        </Grid>
+    </Border>
+</Window>

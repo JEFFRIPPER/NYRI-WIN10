@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Threading;
 
 namespace Nyri.Win10.Services;
 
@@ -10,14 +12,23 @@ public sealed class ClipboardListener : IDisposable
     private readonly HwndSource? _source;
     private readonly IntPtr _hwnd;
     private readonly Action<string> _onClipboard;
+    private readonly Dispatcher _dispatcher;
+    private bool _disposed;
 
     public ClipboardListener(Window window, Action<string> onClipboard)
     {
+        _dispatcher = window.Dispatcher;
         _onClipboard = onClipboard;
         _hwnd = new WindowInteropHelper(window).Handle;
         _source = HwndSource.FromHwnd(_hwnd);
-        _source?.AddHook(WndProc);
-        AddClipboardFormatListener(_hwnd);
+        if (_source is null) throw new InvalidOperationException("Clipboard listener requires a live window handle.");
+        _source.AddHook(WndProc);
+        if (!AddClipboardFormatListener(_hwnd))
+        {
+            var error = Marshal.GetLastWin32Error();
+            _source.RemoveHook(WndProc);
+            throw new Win32Exception(error, "Windows could not attach clipboard notifications.");
+        }
     }
 
     private IntPtr WndProc(
@@ -26,11 +37,12 @@ public sealed class ClipboardListener : IDisposable
         IntPtr wParam,
         IntPtr lParam,
         ref bool handled)
-    {        if (msg != WmClipboardUpdate)
+    {        if (_disposed || _dispatcher.HasShutdownStarted || msg != WmClipboardUpdate)
             return IntPtr.Zero;
 
-        Application.Current.Dispatcher.BeginInvoke(() =>
+        _dispatcher.BeginInvoke(() =>
         {
+            if (_disposed) return;
             try
             {
                 if (Clipboard.ContainsText())
@@ -53,7 +65,9 @@ public sealed class ClipboardListener : IDisposable
     }
 
     public void Dispose()
-    {        if (_hwnd != IntPtr.Zero)
+    {        if (_disposed) return;
+        _disposed = true;
+        if (_hwnd != IntPtr.Zero)
             RemoveClipboardFormatListener(_hwnd);
         _source?.RemoveHook(WndProc);
     }

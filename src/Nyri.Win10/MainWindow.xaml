@@ -1,7 +1,7 @@
 <Window x:Class="Nyri.Win10.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="NYRI-WIN10"
+        Foreground="{DynamicResource OnSurfaceBrush}" Title="NYRI-WIN10"
         Width="260"
         Height="70"
         MinWidth="260"
@@ -20,7 +20,7 @@
         <Border x:Name="IslandBorder"
                 Margin="10"
                 Padding="12,8"
-                Background="{StaticResource SurfaceBrush}"
+                Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="25"
                 Cursor="Hand"
                 MouseLeftButtonDown="Island_MouseLeftButtonDown">
@@ -45,11 +45,11 @@
                     <Border Width="26"
                             Height="26"
                             CornerRadius="13"
-                            Background="{StaticResource PrimaryBrush}"
+                            Background="{DynamicResource PrimaryBrush}"
                             VerticalAlignment="Center">
                         <TextBlock x:Name="StatusGlyph"
                                    Text="●"
-                                   Foreground="#FF1E122B"
+                                   Foreground="{DynamicResource OnPrimaryBrush}"
                                    FontWeight="Bold"
                                    FontSize="13"
                                    HorizontalAlignment="Center"
@@ -66,7 +66,7 @@
                                    TextTrimming="CharacterEllipsis"/>                        <TextBlock x:Name="DetailText"
                                    Text="Windows live island"
                                    FontSize="10"
-                                   Foreground="{StaticResource MutedBrush}"
+                                   Foreground="{DynamicResource MutedBrush}"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
@@ -123,7 +123,7 @@
                                                        FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding Detail}"
                                                        FontSize="10"
-                                                       Foreground="{StaticResource MutedBrush}"
+                                                       Foreground="{DynamicResource MutedBrush}"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
@@ -139,15 +139,15 @@
                                 HorizontalAlignment="Center"
                                 Margin="0,4,0,8"
                                 Visibility="Collapsed">
-                        <Button Style="{StaticResource MediaButtonStyle}"
+                        <Button Style="{DynamicResource MediaButtonStyle}"
                                 Content="⏮"
                                 ToolTip="Предыдущий трек"
                                 Click="MediaPrevious_Click"/>
-                        <Button Style="{StaticResource MediaButtonStyle}"
+                        <Button Style="{DynamicResource MediaButtonStyle}"
                                 Content="⏯"
                                 ToolTip="Play / Pause"
                                 Click="MediaPlayPause_Click"/>
-                        <Button Style="{StaticResource MediaButtonStyle}"
+                        <Button Style="{DynamicResource MediaButtonStyle}"
                                 Content="⏭"
                                 ToolTip="Следующий трек"
                                 Click="MediaNext_Click"/>
@@ -157,15 +157,15 @@
                                 Orientation="Horizontal"
                                 HorizontalAlignment="Center"
                                 Margin="0,0,0,8">
-                        <Button Style="{StaticResource MediaButtonStyle}"
+                        <Button Style="{DynamicResource MediaButtonStyle}"
                                 Content="5m"
                                 ToolTip="Таймер на 5 минут"
                                 Click="StartFiveMinuteTimer_Click"/>
-                        <Button Style="{StaticResource MediaButtonStyle}"
+                        <Button Style="{DynamicResource MediaButtonStyle}"
                                 Content="⏱"
                                 ToolTip="Старт / стоп секундомера"
                                 Click="ToggleStopwatch_Click"/>
-                        <Button Style="{StaticResource MediaButtonStyle}"
+                        <Button Style="{DynamicResource MediaButtonStyle}"
                                 Content="■"
                                 ToolTip="Остановить таймер"
                                 Click="StopTimer_Click"/>
@@ -173,7 +173,7 @@
 
                     <TextBlock Grid.Row="4"
                                Text="SHIFT + drag  •  CTRL+R центр  •  ESC свернуть  •  CTRL+Q выход"
-                               Foreground="{StaticResource MutedBrush}"
+                               Foreground="{DynamicResource MutedBrush}"
                                FontSize="9"
                                HorizontalAlignment="Center"/>
                 </Grid>

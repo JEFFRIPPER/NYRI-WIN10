@@ -12,6 +12,7 @@ public sealed class PrivacyService : IDisposable
     private readonly ActivityHub _hub;
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _watch;
+    private bool _disposed;
 
     public PrivacyService(ActivityHub hub)
     {
@@ -86,6 +87,8 @@ public sealed class PrivacyService : IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         _stop.Cancel();
         _watch.GetAwaiter().GetResult();
         _stop.Dispose();

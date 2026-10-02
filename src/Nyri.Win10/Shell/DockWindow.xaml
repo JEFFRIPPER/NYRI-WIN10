@@ -1,0 +1,35 @@
+<Window x:Class="Nyri.Win10.Shell.DockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Foreground="{DynamicResource OnSurfaceBrush}" Title="NYRI — док" SizeToContent="WidthAndHeight" MaxWidth="1000" WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent" ShowInTaskbar="False" Topmost="True" Loaded="Window_Loaded" SizeChanged="Window_SizeChanged">
+    <!-- A finite root constraint keeps SizeToContent from measuring the scroller infinitely. -->
+    <Grid MaxWidth="{Binding MaxWidth, RelativeSource={RelativeSource AncestorType={x:Type Window}}}">
+    <Border Style="{DynamicResource ShellCardStyle}" CornerRadius="28" Margin="8" Padding="10,6">
+        <DockPanel LastChildFill="True">
+            <Button DockPanel.Dock="Left" Content="&#xE71D;" FontFamily="Segoe MDL2 Assets" Style="{DynamicResource ShellIconButtonStyle}" Click="Search_Click" ToolTip="Все приложения" VerticalAlignment="Top"/>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False" PanningMode="HorizontalOnly">
+            <StackPanel Orientation="Horizontal">
+            <ItemsControl x:Name="PinnedList">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate>
+                    <Button Style="{DynamicResource ShellIconButtonStyle}" ToolTip="{Binding Name}" Tag="{Binding}" Click="Pinned_Click" Margin="3,0">
+                        <Grid Width="30" Height="30"><TextBlock Text="{Binding Glyph}" FontFamily="Segoe MDL2 Assets" FontSize="25" VerticalAlignment="Center" HorizontalAlignment="Center"/><Image Source="{Binding Icon}" Width="30" Height="30"/></Grid>
+                        <Button.ContextMenu><ContextMenu><MenuItem Header="Открепить" Tag="{Binding}" Click="Unpin_Click"/></ContextMenu></Button.ContextMenu>
+                    </Button>
+                </DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Border Width="1" Background="{DynamicResource OutlineVariantBrush}" Margin="10,8"/>
+            <ItemsControl x:Name="RunningList">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate><DataTemplate>
+                    <Button Style="{DynamicResource ShellIconButtonStyle}" ToolTip="{Binding Title}" Tag="{Binding}" Click="Running_Click" Margin="3,0">
+                        <Grid Width="30" Height="34"><TextBlock Text="&#xE737;" FontFamily="Segoe MDL2 Assets" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/><Image Source="{Binding Icon}" Width="28" Height="28" VerticalAlignment="Top"/><Border Width="5" Height="3" Background="{DynamicResource PrimaryBrush}" CornerRadius="2" VerticalAlignment="Bottom" HorizontalAlignment="Center"/></Grid>
+                    </Button>
+                </DataTemplate></ItemsControl.ItemTemplate>
+            </ItemsControl>
+            </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+    </Grid>
+</Window>

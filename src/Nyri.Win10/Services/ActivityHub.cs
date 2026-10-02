@@ -7,11 +7,18 @@ namespace Nyri.Win10.Services;
 public sealed class ActivityHub
 {
     private readonly Dispatcher _dispatcher = Dispatcher.CurrentDispatcher;
+    private volatile bool _sealed;
     public ObservableCollection<IslandActivity> Activities { get; } = new();
     public event EventHandler? Changed;
+    public bool IsSealed => _sealed;
+
+    // Freeze the snapshot before cancelling providers. Already queued callbacks
+    // still execute, but cannot change state after the runtime has shut down.
+    public void Seal() => _sealed = true;
 
     public void Upsert(IslandActivity activity)
     {
+        if (_sealed || _dispatcher.HasShutdownStarted) return;
         if (!_dispatcher.CheckAccess())
         {
             _dispatcher.BeginInvoke(() => Upsert(activity));
@@ -33,6 +40,7 @@ public sealed class ActivityHub
 
     public void Remove(string id)
     {
+        if (_sealed || _dispatcher.HasShutdownStarted) return;
         if (!_dispatcher.CheckAccess())
         {
             _dispatcher.BeginInvoke(() => Remove(id));

@@ -16,47 +16,38 @@ public partial class MainWindow : Window
     private const double ExpandedWidth = 430;
     private const double ExpandedHeight = 300;
 
-    private readonly ActivityHub _hub = new();
-    private readonly SettingsService _settings = new();
+    private readonly ShellRuntime _runtime;
+    private readonly ActivityHub _hub;
+    private readonly SettingsService _settings;
     private readonly TimerService _timerService;
     private readonly DispatcherTimer _clockTimer;
-    private PrivacyService? _privacy;
-    private SystemStatusService? _systemStatus;
-    private MediaSessionService? _mediaSession;
-    private ClipboardListener? _clipboardListener;
-    private CancellationTokenSource? _clipboardCts;
+
     private bool _expanded;
     private bool _manualPosition;
 
-    public MainWindow()
+    public MainWindow(ShellRuntime runtime)
     {
+        _runtime = runtime;
+        _hub = runtime.Hub;
+        _settings = runtime.Settings;
+        _timerService = runtime.Timers;
         InitializeComponent();
-        _timerService = new TimerService(_hub);
         ActivityList.ItemsSource = _hub.Activities;
-        _hub.Changed += (_, _) => UpdateHeader();
+        _hub.Changed += Hub_Changed;
         _clockTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
         };
         _clockTimer.Tick += (_, _) => UpdateClock();
 
-        _hub.Upsert(new IslandActivity(
-            "ready",
-            IslandActivityKind.System,
-            "NYRI готов",
-            "Windows live island",
-            "◆",
-            DateTimeOffset.Now,
-            true,
-            1));
     }
 
     private void Window_SourceInitialized(object? sender, EventArgs e)
     {
-        _clipboardListener = new ClipboardListener(this, OnClipboard);
+        _runtime.AttachClipboard(this);
     }
 
-    private async void Window_Loaded(object sender, RoutedEventArgs e)
+    private void Window_Loaded(object sender, RoutedEventArgs e)
     {
         // Place and paint the island before waiting for optional Windows providers.
         RestorePosition();
@@ -64,27 +55,24 @@ public partial class MainWindow : Window
         UpdateClock();
         UpdateHeader();
         AppDiagnostics.Write($"Window loaded: visible={IsVisible}, left={Left}, top={Top}, size={ActualWidth}x{ActualHeight}");
-        (Application.Current as App)?.WindowReady(this);
-        _privacy = new PrivacyService(_hub);
-        _systemStatus = new SystemStatusService(_hub);
-        _mediaSession = new MediaSessionService(_hub);
-        await _mediaSession.StartAsync();
 
-        AppDiagnostics.Write("Media provider initialized");
     }
     public void Reveal()
     {
         if (Dispatcher.HasShutdownStarted) return;
         Show();
         WindowState = WindowState.Normal;
-        // A second launch is an explicit recovery request; bring the island into view.
-        _manualPosition = false;
-        _settings.Save(new AppSettings());
-        CenterAtTop();
+        if (!IsOnVirtualScreen(Left, Top))
+        {
+            _manualPosition = false;
+            CenterAtTop();
+        }
         Activate();
         Focus();
         AppDiagnostics.Write($"Window revealed: visible={IsVisible}, left={Left}, top={Top}");
     }
+    private void Hub_Changed(object? sender, EventArgs e) => UpdateHeader();
+
     private void UpdateClock()
     {
         ClockText.Text = DateTime.Now.ToString("HH:mm");
@@ -114,31 +102,6 @@ public partial class MainWindow : Window
             TitleText.Text = primary.Title;
             DetailText.Text = primary.Detail;
         });
-    }
-
-    private async void OnClipboard(string text)
-    {
-        _clipboardCts?.Cancel();
-        _clipboardCts = new CancellationTokenSource();
-        var token = _clipboardCts.Token;
-        _hub.Upsert(new IslandActivity(
-            "clipboard",
-            IslandActivityKind.Clipboard,
-            "Скопировано",
-            text,
-            "▣",
-            DateTimeOffset.Now,
-            true,
-            65));
-
-        try
-        {
-            await Task.Delay(3500, token);
-            _hub.Remove("clipboard");
-        }
-        catch (TaskCanceledException)
-        {
-        }
     }
 
     private void Island_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -172,20 +135,20 @@ public partial class MainWindow : Window
 
     private async void MediaPrevious_Click(object sender, RoutedEventArgs e)
     {
-        if (_mediaSession is not null)
-            await _mediaSession.PreviousAsync();
+        if (_runtime.Media is not null)
+            await _runtime.Media.PreviousAsync();
     }
 
     private async void MediaPlayPause_Click(object sender, RoutedEventArgs e)
     {
-        if (_mediaSession is not null)
-            await _mediaSession.TogglePlayPauseAsync();
+        if (_runtime.Media is not null)
+            await _runtime.Media.TogglePlayPauseAsync();
     }
 
     private async void MediaNext_Click(object sender, RoutedEventArgs e)
     {
-        if (_mediaSession is not null)
-            await _mediaSession.NextAsync();
+        if (_runtime.Media is not null)
+            await _runtime.Media.NextAsync();
     }
 
     private void StartFiveMinuteTimer_Click(object sender, RoutedEventArgs e)
@@ -196,6 +159,9 @@ public partial class MainWindow : Window
 
     private void StopTimer_Click(object sender, RoutedEventArgs e)
         => _timerService.Stop();
+
+    public void ExpandForPanel() { if (!_expanded) ToggleExpanded(); }
+    public event EventHandler? PanelDismissed;
 
     private void ToggleExpanded()
     {
@@ -237,20 +203,24 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.Q && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
-            Close();
+            Application.Current.Shutdown();
             return;
         }
 
         if (e.Key == Key.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
         {
             _manualPosition = false;
-            _settings.Save(new AppSettings());
+            _settings.Update(saved => saved with { Left = null, Top = null });
             CenterAtTop();
             return;
         }
 
-        if (e.Key == Key.Escape && _expanded)
-            ToggleExpanded();
+        if (e.Key == Key.Escape)
+        {
+            if (PanelDismissed is not null) PanelDismissed.Invoke(this, EventArgs.Empty);
+            else if (_expanded) ToggleExpanded();
+            e.Handled = true;
+        }
     }
 
     private void RestorePosition()
@@ -299,15 +269,9 @@ public partial class MainWindow : Window
     private void Window_Closing(object? sender, CancelEventArgs e)
     {
         if (_manualPosition)
-            _settings.Save(new AppSettings(Left, Top));
+            _settings.Update(saved => saved with { Left = Left, Top = Top });
 
         _clockTimer.Stop();
-        _clipboardCts?.Cancel();
-        _clipboardCts?.Dispose();
-        _clipboardListener?.Dispose();
-        _mediaSession?.Dispose();
-        _systemStatus?.Dispose();
-        _privacy?.Dispose();
-        _timerService.Dispose();
+        _hub.Changed -= Hub_Changed;
     }
 }
